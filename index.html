@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🩺 Apple Health PRO Dashboard v3.0</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body { font-family: -apple-system, sans-serif; margin: 20px; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); }
+        .header { text-align: center; color: #1d1d1f; margin-bottom: 30px; }
+        .controls { background: white; padding: 25px; border-radius: 16px; margin-bottom: 25px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); }
+        .row { display: flex; gap: 20px; flex-wrap: wrap; align-items: end; margin-bottom: 20px; }
+        select, input { padding: 12px 16px; border: 1px solid #e0e0e0; border-radius: 10px; font-size: 15px; background: #fafafa; }
+        button { background: linear-gradient(135deg, #007aff 0%, #0056cc 100%); color: white; border: none; padding: 12px 24px; border-radius: 10px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,122,255,0.4); }
+        button.secondary { background: #34c759; }
+        button.export { background: #ff9500; }
+        .chart-container { height: 450px; margin-bottom: 25px; background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 25px; }
+        .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 16px; text-align: center; box-shadow: 0 4px 15px rgba(102,126,234,0.4); }
+        .stat-number { font-size: 2.8em; font-weight: 800; margin-bottom: 5px; }
+        .metric-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-top: 15px; }
+        .metric-item { padding: 15px; background: #f8f9fa; border-radius: 10px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; font-weight: 600; }
+        .metric-item:hover { border-color: #007aff; background: #e3f2fd; transform: translateY(-2px); }
+        .metric-item.active { border-color: #007aff; background: #007aff; color: white; }
+        #dataPreview { background: #f8f9fa; padding: 20px; border-radius: 12px; margin-top: 15px; max-height: 150px; overflow: auto; font-size: 14px; line-height: 1.6; }
+        .export-section { text-align: center; margin-top: 25px; padding: 25px; background: white; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .date-inputs { display: flex; gap: 15px; align-items: center; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🩺 Apple Health PRO Dashboard v3.0</h1>
+        <p>✅ Multi-metrica • ✅ Correlazioni • ✅ Esporta PNG</p>
+    </div>
+    
+    <div class="controls">
+        <div class="row">
+            <input type="file" id="csvFile" accept=".csv" multiple onchange="loadFiles()">
+            <button onclick="setDateLastYear()">📅 Ultimo Anno</button>
+            <button onclick="setDateAllTime()" class="secondary">🌍 Tutto</button>
+        </div>
+        
+        <div class="date-inputs">
+            <label>Dal:</label><input type="date" id="startDate">
+            <label>Al:</label><input type="date" id="endDate">
+            <button onclick="updateCharts()">🔄 Aggiorna</button>
+        </div>
+        
+        <div>
+            <label><strong>📊 Metriche caricate (clicca per visualizzare):</strong></label>
+            <div class="metric-grid" id="metricGrid"></div>
+        </div>
+        
+        <div class="row">
+            <label>🔗 Correlazione con: </label>
+            <select id="corrMetric2">
+                <option value="">-- Seleziona 2a metrica --</option>
+            </select>
+            <button onclick="showCorrelation()">📊 Analizza</button>
+        </div>
+        
+        <div id="dataPreview"></div>
+    </div>
+
+    <div class="stats-grid" id="statsContainer"></div>
+    
+    <div id="chart1" class="chart-container"></div>
+    <div id="chart2" class="chart-container"></div>
+    <div id="chart3" class="chart-container" style="display:none;"></div>
+
+    <div class="export-section">
+        <h3>💾 Esportazioni</h3>
+        <button onclick="exportPNG('chart1', 'trend')" class="export">📈 Scarica Grafico 1 PNG</button>
+        <button onclick="exportPNG('chart2', 'stats')" class="export">📊 Scarica Grafico 2 PNG</button>
+        <button onclick="exportAllCSV()" class="secondary">📄 Scarica Tutti CSV</button>
+    </div>
+
+    <script>
+        let csvData = {};
+        let currentMetric = null;
+
+        function parseISODate(str) {
+            if (!str) return null;
+            const isoMatch = str.match(/(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})/);
+            if (isoMatch) return new Date(`${isoMatch[1]}T${isoMatch[2]}`);
+            return new Date(str);
+        }
+
+        function parseCSV(text, filename) {
+            const rows = text.split('\n').map(row => row.split(',').map(cell => cell.trim()));
+            const headers = rows[0];
+            
+            if (filename.includes('workouts')) {
+                return rows.slice(1).map(row => {
+                    const startDate = parseISODate(row[5]);
+                    const duration = parseFloat(row[7]) || 0;
+                    const workoutType = row[6] || 'Unknown';
+                    return { date: startDate, value: duration, type: workoutType };
+                }).filter(d => d.date && !isNaN(d.value));
+            }
+            
+            return rows.slice(1).map(row => {
+                const date = parseISODate(row[0]);
+                let value = NaN;
+                for (let i = 1; i < row.length; i++) {
+                    value = parseFloat(row[i]);
+                    if (!isNaN(value)) break;
+                }
+                return { date, value };
+            }).filter(d => d.date && !isNaN(d.value));
+        }
+
+        function loadFiles() {
+            const files = document.getElementById('csvFile').files;
+            const grid = document.getElementById('metricGrid');
+            const corrSelect = document.getElementById('corrMetric2');
+            grid.innerHTML = '';
+            corrSelect.innerHTML = '<option value="">-- Seleziona --</option>';
+            
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const data = parseCSV(e.target.result, file.name);
+                    if (data.length > 0) {
+                        csvData[file.name] = { 
+                            name: file.name.replace('.csv', ''), 
+                            data,
+                            filename: file.name 
+                        };
+                        
+                        const btn = document.createElement('div');
+                        btn.className = 'metric-item';
+                        btn.textContent = file.name;
+                        btn.onclick = () => selectMetric(file.name);
+                        grid.appendChild(btn);
+                        
+                        const opt = new Option(file.name, file.name);
+                        corrSelect.appendChild(opt);
+                    }
+                };
+                reader.readAsText(file);
+            });
+            
+            setDateLastYear();
+        }
+
+        function selectMetric(filename) {
+            document.querySelectorAll('.metric-item').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+            currentMetric = csvData[filename];
+            document.getElementById('chart3').style.display = 'none';
+            updateCharts();
+        }
+
+        function setDateLastYear() {
+            const today = new Date();
+            const oneYear = new Date();
+            oneYear.setFullYear(today.getFullYear() - 1);
+            document.getElementById('startDate').value = oneYear.toISOString().split('T')[0];
+            document.getElementById('endDate').value = today.toISOString().split('T')[0];
+        }
+
+        function setDateAllTime() {
+    if (Object.keys(csvData).length === 0) {
+        alert('⚠️ Carica prima dei CSV!');
+        return;
+    }
+    
+    // DEVI INIZIALIZZARE allDates PRIMA del forEach!
+    const allDates = [];
+    
+    Object.values(csvData).forEach(m => {
+        m.data.forEach(d => {
+            if (d.date && d.date instanceof Date && !isNaN(d.date.getTime())) {
+                allDates.push(d.date.getTime());
+            }
+        });
+    });
+    
+    // Controllo date valide
+    if (allDates.length === 0) {
+        alert('⚠️ Nessun dato con date valide!');
+        console.error('csvData:', csvData);
+        return;
+    }
+    
+    console.log('📊 Trovate', allDates.length, 'date valide');
+    
+    const min = new Date(Math.min(...allDates));
+    const max = new Date(Math.max(...allDates));
+    
+    console.log('📅 Range:', min.toLocaleDateString('it-IT'), '→', max.toLocaleDateString('it-IT'));
+    
+    document.getElementById('startDate').value = min.toISOString().split('T')[0];
+    document.getElementById('endDate').value = max.toISOString().split('T')[0];
+    
+    if (currentMetric) {
+        updateCharts();
+    }
+}
+
+
+        function updateCharts() {
+            if (!currentMetric) return;
+            
+            const startDate = new Date(document.getElementById('startDate').value + 'T00:00:00');
+            const endDate = new Date(document.getElementById('endDate').value + 'T23:59:59');
+            
+            let filtered = currentMetric.data.filter(d => d.date >= startDate && d.date <= endDate);
+            filtered.sort((a,b) => a.date - b.date);
+            
+            if (filtered.length === 0) {
+                alert('Nessun dato nel range selezionato');
+                return;
+            }
+            
+            updateStats(filtered);
+            
+            // Grafico 1: Trend
+            const trace1 = {
+                x: filtered.map(d => d.date),
+                y: filtered.map(d => d.value),
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: currentMetric.name,
+                line: {color: '#007aff', width: 3},
+                marker: {size: 6}
+            };
+            
+            Plotly.newPlot('chart1', [trace1], {
+                title: `📈 ${currentMetric.name} (${filtered.length} punti)`,
+                xaxis: {title: 'Data'},
+                yaxis: {title: currentMetric.name}
+            });
+            
+            // Grafico 2: Distribuzione giornaliera + media mobile
+            const dailyData = aggregateByDay(filtered);
+            const movingAvg = calculateMovingAvg(dailyData, 7);
+            
+            const trace2 = {
+                x: dailyData.map(d => d.date),
+                y: dailyData.map(d => d.value),
+                type: 'bar',
+                name: 'Giornaliero',
+                marker: {color: 'rgba(0,122,255,0.6)'}
+            };
+            
+            const trace3 = {
+                x: movingAvg.map(d => d.date),
+                y: movingAvg.map(d => d.value),
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Media 7gg',
+                line: {color: '#ff9500', width: 4}
+            };
+            
+            Plotly.newPlot('chart2', [trace2, trace3], {
+                title: `📊 Distribuzione giornaliera + Trend`,
+                xaxis: {title: 'Data'},
+                yaxis: {title: currentMetric.name}
+            });
+            
+            showPreview(filtered.slice(0, 10));
+        }
+
+        function aggregateByDay(data) {
+            const daily = {};
+            data.forEach(d => {
+                const key = d.date.toISOString().split('T')[0];
+                daily[key] = (daily[key] || 0) + d.value;
+            });
+            return Object.entries(daily).map(([date, value]) => ({
+                date: new Date(date),
+                value
+            })).sort((a,b) => a.date - b.date);
+        }
+
+        function calculateMovingAvg(data, window) {
+            if (data.length < window) return [];
+            const result = [];
+            for (let i = window - 1; i < data.length; i++) {
+                const slice = data.slice(i - window + 1, i + 1);
+                const avg = slice.reduce((sum, d) => sum + d.value, 0) / window;
+                result.push({ date: data[i].date, value: avg });
+            }
+            return result;
+        }
+
+        function showCorrelation() {
+            const metric2Name = document.getElementById('corrMetric2').value;
+            if (!currentMetric || !metric2Name || !csvData[metric2Name]) {
+                alert('Seleziona prima una metrica principale e una per correlazione');
+                return;
+            }
+            
+            const metric2 = csvData[metric2Name];
+            const startDate = new Date(document.getElementById('startDate').value);
+            const endDate = new Date(document.getElementById('endDate').value);
+            
+            // Allinea le date
+            const aligned = alignDatasets(currentMetric.data, metric2.data, startDate, endDate);
+            
+            if (aligned.length < 3) {
+                alert('Troppo pochi dati sovrapposti per correlazione');
+                return;
+            }
+            
+            const correlation = calculateCorrelation(aligned.map(d => d.value1), aligned.map(d => d.value2));
+            
+            // Grafico scatter
+            const trace = {
+                x: aligned.map(d => d.value1),
+                y: aligned.map(d => d.value2),
+                mode: 'markers',
+                type: 'scatter',
+                name: 'Correlazione',
+                marker: {size: 10, color: '#34c759'}
+            };
+            
+            document.getElementById('chart3').style.display = 'block';
+            Plotly.newPlot('chart3', [trace], {
+                title: `🔗 Correlazione: ${currentMetric.name} vs ${metric2.name} (r=${correlation.toFixed(3)})`,
+                xaxis: {title: currentMetric.name},
+                yaxis: {title: metric2.name}
+            });
+            
+            document.getElementById('dataPreview').innerHTML = `
+                <strong>📊 Analisi Correlazione:</strong><br>
+                Coefficiente Pearson: <strong>${correlation.toFixed(3)}</strong><br>
+                Interpretazione: ${interpretCorrelation(correlation)}<br>
+                Punti analizzati: ${aligned.length}
+            `;
+        }
+
+        function alignDatasets(data1, data2, startDate, endDate) {
+            const map1 = {};
+            data1.forEach(d => {
+                if (d.date >= startDate && d.date <= endDate) {
+                    const key = d.date.toISOString().split('T')[0];
+                    map1[key] = (map1[key] || 0) + d.value;
+                }
+            });
+            
+            const map2 = {};
+            data2.forEach(d => {
+                if (d.date >= startDate && d.date <= endDate) {
+                    const key = d.date.toISOString().split('T')[0];
+                    map2[key] = (map2[key] || 0) + d.value;
+                }
+            });
+            
+            const aligned = [];
+            Object.keys(map1).forEach(date => {
+                if (map2[date]) {
+                    aligned.push({ date, value1: map1[date], value2: map2[date] });
+                }
+            });
+            return aligned;
+        }
+
+        function calculateCorrelation(x, y) {
+            const n = x.length;
+            const sumX = x.reduce((a,b) => a+b, 0);
+            const sumY = y.reduce((a,b) => a+b, 0);
+            const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
+            const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
+            const sumY2 = y.reduce((sum, yi) => sum + yi * yi, 0);
+            
+            const numerator = n * sumXY - sumX * sumY;
+            const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+            
+            return denominator === 0 ? 0 : numerator / denominator;
+        }
+
+        function interpretCorrelation(r) {
+            const abs = Math.abs(r);
+            if (abs > 0.7) return '🟢 Forte correlazione';
+            if (abs > 0.4) return '🟡 Correlazione moderata';
+            if (abs > 0.2) return '🟠 Correlazione debole';
+            return '⚪ Nessuna correlazione significativa';
+        }
+
+
+        // Sistema di riconoscimento metrica e unità
+function detectMetricType(filename, metricName) {
+    const name = (filename + metricName).toLowerCase();
+    
+    if (name.includes('step')) return 'steps';
+    if (name.includes('heart') || name.includes('bpm')) return 'heart_rate';
+    if (name.includes('workout')) return 'workout';
+    if (name.includes('weight') || name.includes('body_mass') || name.includes('peso')) return 'weight';
+    if (name.includes('calor')) return 'calories';
+    if (name.includes('distance') || name.includes('distanza')) return 'distance';
+    if (name.includes('sleep') || name.includes('sonno')) return 'sleep';
+    if (name.includes('vo2')) return 'vo2max';
+    if (name.includes('hrv')) return 'hrv';
+    if (name.includes('oxygen') || name.includes('spo2')) return 'oxygen';
+    if (name.includes('blood_pressure') || name.includes('pressione')) return 'blood_pressure';
+    if (name.includes('glucose') || name.includes('glicemia')) return 'glucose';
+    if (name.includes('temperature') || name.includes('temperatura')) return 'temperature';
+    
+    return 'generic';
+}
+
+function formatValueWithUnit(value, metricType, isTotal = false) {
+    switch(metricType) {
+        case 'steps':
+            return value.toLocaleString('it-IT', {maximumFractionDigits: 0}) + ' passi';
+        
+        case 'heart_rate':
+            return value.toFixed(0) + ' bpm';
+        
+        case 'workout':
+            if (isTotal && value > 60) {
+                const hours = (value / 60).toFixed(1);
+                return hours + ' ore';
+            }
+            return value.toFixed(0) + ' min';
+        
+        case 'weight':
+            return value.toFixed(1) + ' kg';
+        
+        case 'calories':
+            return value.toFixed(0) + ' kcal';
+        
+        case 'distance':
+            if (value > 1000) {
+                return (value / 1000).toFixed(2) + ' km';
+            }
+            return value.toFixed(0) + ' m';
+        
+        case 'sleep':
+            const hours = Math.floor(value / 60);
+            const mins = Math.round(value % 60);
+            return `${hours}h ${mins}min`;
+        
+        case 'vo2max':
+            return value.toFixed(1) + ' mL/(kg·min)';
+        
+        case 'hrv':
+            return value.toFixed(0) + ' ms';
+        
+        case 'oxygen':
+            return value.toFixed(1) + ' %';
+        
+        case 'blood_pressure':
+            return value.toFixed(0) + ' mmHg';
+        
+        case 'glucose':
+            return value.toFixed(0) + ' mg/dL';
+        
+        case 'temperature':
+            return value.toFixed(1) + ' °C';
+        
+        default:
+            return value.toFixed(1);
+    }
+}
+
+
+        function updateStats(data) {
+    // Identifica tipo metrica
+    const metricType = detectMetricType(currentMetric.filename, currentMetric.name);
+    
+    const avg = data.reduce((a,b) => a + b.value, 0) / data.length;
+    const max = Math.max(...data.map(d => d.value));
+    const min = Math.min(...data.map(d => d.value));
+    const total = data.reduce((a,b) => a + b.value, 0);
+    
+    // Formatta con unità appropriate
+    const avgFormatted = formatValueWithUnit(avg, metricType);
+    const maxFormatted = formatValueWithUnit(max, metricType);
+    const minFormatted = formatValueWithUnit(min, metricType);
+    const totalFormatted = formatValueWithUnit(total, metricType, true);
+    
+    document.getElementById('statsContainer').innerHTML = `
+        <div class="stat-card">
+            <div class="stat-number">${avgFormatted}</div>
+            <div>Media</div>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <div class="stat-number">${maxFormatted}</div>
+            <div>Massimo</div>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <div class="stat-number">${minFormatted}</div>
+            <div>Minimo</div>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+            <div class="stat-number">${totalFormatted}</div>
+            <div>Totale</div>
+        </div>
+    `;
+}
+
+
+        function showPreview(data) {
+            const preview = document.getElementById('dataPreview');
+            let html = `<strong>📋 Preview (${data.length} record):</strong><br>`;
+            data.forEach(d => {
+                html += `${d.date.toLocaleDateString('it-IT')} → ${d.value.toFixed(1)}<br>`;
+            });
+            preview.innerHTML = html;
+        }
+
+        function exportPNG(chartId, name) {
+            Plotly.downloadImage(chartId, {
+                format: 'png',
+                width: 1920,
+                height: 1080,
+                filename: `apple_health_${name}_${new Date().toISOString().split('T')[0]}`
+            });
+        }
+
+        function exportAllCSV() {
+            if (Object.keys(csvData).length === 0) return;
+            
+            const zip = [];
+            Object.values(csvData).forEach(metric => {
+                let csv = 'date,value\n';
+                metric.data.forEach(d => {
+                    csv += `${d.date.toISOString()},${d.value}\n`;
+                });
+                
+                const blob = new Blob([csv], {type: 'text/csv'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${metric.name}_export.csv`;
+                a.click();
+            });
+        }
+
+        window.onload = setDateLastYear;
+    </script>
+</body>
+</html>
