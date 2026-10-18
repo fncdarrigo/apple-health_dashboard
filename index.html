@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Apple Health Dashboard</title>
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         :root {
             --bg: #f5f5f7;
@@ -154,8 +156,46 @@
         .help-step p, .help-step li { font-size: 14px; line-height: 1.6; color: var(--text-soft); }
         .help-step code { background: var(--surface-2); padding: 2px 6px; border-radius: 4px; font-size: 13px; color: var(--accent); }
 
-        @media (max-width: 1024px) { .dashboard-layout { grid-template-columns: 1fr; } .sidebar-section { position: static; } }
-        @media (max-width: 768px) { body { padding: 16px; } }
+        /* Tabs */
+        .tabs { display: flex; gap: 4px; background: var(--surface-2); border-radius: var(--radius-sm); padding: 4px; border: 1px solid var(--border); }
+        .tab { padding: 10px 18px; border-radius: 8px; font-weight: 500; font-size: 14px; color: var(--text-soft); background: transparent; border: none; cursor: pointer; transition: all 0.15s; }
+        .tab:hover { color: var(--text); background: var(--surface); }
+        .tab.active { color: #fff; background: var(--accent); }
+
+        /* ECG Panel */
+        .ecg-panel { display: none; }
+        .ecg-header { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+        .ecg-selector { flex: 1; min-width: 280px; }
+        .ecg-selector select { width: 100%; }
+        .ecg-meta { display: flex; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--text-soft); }
+        .ecg-meta .badge { padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 12px; }
+        .badge.normal { background: rgba(52,199,89,0.15); color: #2a9d4a; }
+        .badge.afib { background: rgba(255,59,48,0.15); color: var(--red); }
+        .badge.high { background: rgba(255,149,0,0.15); color: var(--orange); }
+        .badge.other { background: rgba(142,142,147,0.15); color: var(--text-muted); }
+
+        .ecg-layout { display: grid; grid-template-columns: 1fr 300px; gap: 22px; }
+        .ecg-chart-container { min-height: 500px; }
+        .ecg-sidebar { display: flex; flex-direction: column; gap: 16px; }
+        .ecg-info-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
+        .ecg-info-panel h4 { margin: 0 0 12px; font-size: 14px; font-weight: 600; color: var(--text); }
+        .ecg-info-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+        .ecg-info-row:last-child { border-bottom: none; }
+        .ecg-info-label { color: var(--text-soft); }
+        .ecg-info-value { font-weight: 500; color: var(--text); }
+        .ecg-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+        .ecg-controls button { flex: 1; min-width: 100px; }
+
+        @media (max-width: 1024px) {
+            .dashboard-layout { grid-template-columns: 1fr; }
+            .sidebar-section { position: static; }
+            .ecg-layout { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            body { padding: 16px; }
+            .tabs { width: 100%; }
+            .tab { flex: 1; text-align: center; padding: 8px 12px; font-size: 13px; }
+        }
     </style>
 </head>
 <body>
@@ -169,6 +209,12 @@
                 <button class="ghost" onclick="toggleTheme()" id="themeBtn" title="Tema chiaro/scuro">🌙</button>
                 <button class="ghost" onclick="toggleHelp()" id="helpBtn">❓ Aiuto</button>
             </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tabs" id="tabNav">
+            <button class="tab active" data-tab="dashboard" onclick="switchTab('dashboard')">📊 Dashboard</button>
+            <button class="tab" data-tab="ecg" onclick="switchTab('ecg')">🫀 ECG</button>
         </div>
 
         <!-- Upload -->
