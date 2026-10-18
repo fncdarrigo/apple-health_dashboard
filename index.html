@@ -86,6 +86,166 @@
             .chart-grid { grid-template-columns: 1fr; }
             .top10-grid { grid-template-columns: 1fr; }
         }
+
+        /* Help Section */
+        .help-toggle-btn {
+            background: #e8e8ed;
+            color: #1d1d1f;
+            padding: 8px 16px;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+        .help-toggle-btn:hover {
+            background: #d2d2d7;
+        }
+
+        .help-section {
+            background: #fff;
+            border: 1px solid #e8e8ed;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 1px 1px rgba(0,0,0,0.03);
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .help-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .help-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+        .help-close-btn {
+            background: #ff3b30;
+            color: white;
+            padding: 6px 14px;
+            font-size: 12px;
+            border-radius: 8px;
+        }
+        .help-close-btn:hover {
+            background: #d70015;
+        }
+
+        .help-step {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 28px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .help-step:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .help-step-number {
+            width: 36px;
+            height: 36px;
+            background: #0071e3;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 15px;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+
+        .help-step-content {
+            flex: 1;
+            min-width: 0;
+        }
+        .help-step-content h4 {
+            margin: 0 0 12px 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+        .help-step-content h5 {
+            margin: 16px 0 8px 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #6e6e73;
+        }
+        .help-step-content p {
+            margin: 8px 0;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #424245;
+        }
+        .help-step-content ol, .help-step-content ul {
+            margin: 8px 0;
+            padding-left: 20px;
+            font-size: 14px;
+            line-height: 1.7;
+            color: #424245;
+        }
+        .help-step-content li {
+            margin-bottom: 6px;
+        }
+        .help-step-content code {
+            background: #f5f5f7;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #0071e3;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+        .help-step-content pre {
+            background: #1d1d1f;
+            color: #f5f5f7;
+            padding: 16px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 12px 0;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .help-step-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+        .help-note {
+            background: #e8f0fe;
+            border-left: 3px solid #0071e3;
+            padding: 10px 14px;
+            border-radius: 0 8px 8px 0;
+            font-size: 13px !important;
+            color: #1d1d1f !important;
+            margin: 12px 0 !important;
+        }
+        .help-note code {
+            background: #d6e4f0;
+        }
+
+        @media (max-width: 768px) {
+            .help-step {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .help-step-number {
+                width: 28px;
+                height: 28px;
+                font-size: 13px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -93,6 +253,7 @@
         <div class="header">
             <h1>🩺 Apple Health Dashboard</h1>
             <p>Analisi dati avanzata</p>
+            <button class="help-toggle-btn" onclick="toggleHelp()" id="helpBtn">❓ Aiuto</button>
         </div>
 
         <div class="controls">
@@ -122,6 +283,93 @@
         </div>
         
         <div id="dataPreview"></div>
+    </div>
+
+    <div id="helpSection" class="help-section" style="display:none;">
+        <div class="help-header">
+            <h3>📖 Guida: Come usare la Dashboard</h3>
+            <button class="help-close-btn" onclick="toggleHelp()">✕ Chiudi</button>
+        </div>
+
+        <div class="help-step">
+            <div class="help-step-number">1</div>
+            <div class="help-step-content">
+                <h4>📱 Esporta dati da iPhone</h4>
+                <ol>
+                    <li>Apri l'app <strong>Salute</strong> sul tuo iPhone</li>
+                    <li>Tocca la tua <strong>foto profilo</strong> in alto a destra</li>
+                    <li>Scorri in basso e seleziona <strong>"Esporta tutti i dati sulla salute"</strong></li>
+                    <li>Attendi la preparazione (può richiedere alcuni minuti)</li>
+                    <li>Scegli <strong>"Salva su File"</strong> e salva lo <strong>ZIP</strong> su iCloud Drive o sul dispositivo</li>
+                </ol>
+                <p class="help-note">💡 Il file ZIP contiene un file <code>export.xml</code> con tutti i tuoi dati.</p>
+            </div>
+        </div>
+
+        <div class="help-step">
+            <div class="help-step-number">2</div>
+            <div class="help-step-content">
+                <h4>🔄 Converti XML in CSV</h4>
+                <p>L'XML di Apple Health non è leggibile direttamente. Devi convertirlo in file CSV (uno per metrica).</p>
+
+                <h5>Opzioni consigliate:</h5>
+                <ul>
+                    <li><strong>📱 Health Export (iOS App)</strong> — App nativa, converte direttamente su iPhone, esporta CSV per categoria</li>
+                    <li><strong>🐍 Apple Health Export (Python)</strong> — <code>pip install apple-health-export</code> → <code>apple-health-export export.xml --format csv</code></li>
+                    <li><strong>🌐 HealthKit to CSV (Web)</strong> — Trascina export.xml su <a href="https://healthkit-to-csv.vercel.app" target="_blank">healthkit-to-csv.vercel.app</a> (nessun upload, tutto lato client)</li>
+                    <li><strong>💻 Script Python personalizzato</strong> — Per controllo totale (vedi esempio sotto)</li>
+                </ul>
+
+                <h5>Esempio script Python:</h5>
+                <pre class="help-code"><code>import xml.etree.ElementTree as ET
+import csv
+from collections import defaultdict
+
+tree = ET.parse('export.xml')
+root = tree.getroot()
+
+records = defaultdict(list)
+for record in root.findall('.//Record'):
+    date = record.get('startDate')[:10]
+    metric = record.get('type').replace('HKQuantityTypeIdentifier', '')
+    value = float(record.get('value'))
+    records[metric].append((date, value))
+
+for metric, data in records.items():
+    with open(f'{metric}.csv', 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['date', 'value'])
+        writer.writerows(sorted(data))</code></pre>
+            </div>
+        </div>
+
+        <div class="help-step">
+            <div class="help-step-number">3</div>
+            <div class="help-step-content">
+                <h4>📊 Importa in Dashboard</h4>
+                <ol>
+                    <li>Clicca <strong>"Scegli file"</strong> (o trascina i CSV nell'area di upload)</li>
+                    <li>Seleziona <strong>più file CSV</strong> contemporaneamente (⌘/Ctrl + clic)</li>
+                    <li>Le metriche appariranno come pulsanti sotto "Metriche caricate"</li>
+                    <li>Clicca una metrica per visualizzare grafici, statistiche e Top 10</li>
+                    <li>Usa i filtri data ("Ultimo Anno", "Tutto", o date personalizzate)</li>
+                </ol>
+                <p class="help-note">💡 La dashboard supporta: Passi, Frequenza cardiaca, Allenamenti, Peso, Calorie, Distanza, Sonno, VO2 Max, HRV, Ossigeno, Pressione, Glicemia, Temperatura.</p>
+            </div>
+        </div>
+
+        <div class="help-step">
+            <div class="help-step-number">4</div>
+            <div class="help-step-content">
+                <h4>🔍 Funzionalità avanzate</h4>
+                <ul>
+                    <li><strong>Correlazione:</strong> Seleziona due metriche e clicca "Analizza" per vedere correlazione di Pearson</li>
+                    <li><strong>Top 10 Giorni:</strong> Nella sidebar, vedi i giorni con valori massimi per la metrica attiva</li>
+                    <li><strong>Esportazione:</strong> Scarica grafici come PNG o tutti i dati come CSV</li>
+                    <li><strong>Media mobile 7gg:</strong> Nel grafico distribuzione, linea arancione = trend settimanale</li>
+                </ul>
+            </div>
+        </div>
     </div>
 
     <div class="dashboard-layout">
@@ -624,6 +872,21 @@ function formatValueWithUnit(value, metricType, isTotal = false) {
                 a.download = `${metric.name}_export.csv`;
                 a.click();
             });
+        }
+
+        function toggleHelp() {
+            const section = document.getElementById('helpSection');
+            const btn = document.getElementById('helpBtn');
+
+            if (section.style.display === 'none') {
+                section.style.display = 'block';
+                btn.textContent = '✕ Chiudi aiuto';
+                btn.style.background = '#ff3b30';
+            } else {
+                section.style.display = 'none';
+                btn.textContent = '❓ Aiuto';
+                btn.style.background = '#e8e8ed';
+            }
         }
 
         window.onload = setDateLastYear;
