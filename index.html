@@ -155,6 +155,14 @@
         .help-step h4 { margin: 2px 0 10px; font-size: 15px; }
         .help-step p, .help-step li { font-size: 14px; line-height: 1.6; color: var(--text-soft); }
         .help-step code { background: var(--surface-2); padding: 2px 6px; border-radius: 4px; font-size: 13px; color: var(--accent); }
+        .help-step pre { background: #1d1d1f; color: #f5f5f7; padding: 14px 16px; border-radius: 10px; overflow-x: auto; margin: 10px 0; font-size: 13px; line-height: 1.5; }
+        .help-step pre code { background: none; padding: 0; color: inherit; }
+        .help-note { background: rgba(0,113,227,0.08); border-left: 3px solid var(--accent); padding: 10px 14px; border-radius: 0 8px 8px 0; margin: 12px 0; color: var(--text); font-size: 13px; }
+        .help-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+        .help-table th, .help-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+        .help-table th { color: var(--text-soft); font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.04em; }
+        .help-table td code { white-space: nowrap; }
+        .help-step h5 { margin: 16px 0 6px; font-size: 13px; font-weight: 600; color: var(--text); }
 
         /* Tabs */
         .tabs { display: flex; gap: 4px; background: var(--surface-2); border-radius: var(--radius-sm); padding: 4px; border: 1px solid var(--border); }
@@ -186,6 +194,12 @@
         .ecg-controls { display: flex; gap: 8px; flex-wrap: wrap; }
         .ecg-controls button { flex: 1; min-width: 100px; }
 
+        /* Routes / map */
+        .routes-panel { display: none; }
+        .route-map { height: 560px; width: 100%; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); z-index: 0; }
+        [data-theme="dark"] .route-map { filter: brightness(0.9); }
+        .leaflet-container { background: var(--surface-2); border-radius: var(--radius); font-family: inherit; }
+
         @media (max-width: 1024px) {
             .dashboard-layout { grid-template-columns: 1fr; }
             .sidebar-section { position: static; }
@@ -215,15 +229,21 @@
         <div class="tabs" id="tabNav">
             <button class="tab active" data-tab="dashboard" onclick="switchTab('dashboard')">📊 Dashboard</button>
             <button class="tab" data-tab="ecg" onclick="switchTab('ecg')">🫀 ECG</button>
+            <button class="tab" data-tab="routes" onclick="switchTab('routes')">🗺️ Mappe workout</button>
         </div>
 
         <!-- Upload -->
         <div class="panel">
             <div class="dropzone" id="dropzone" onclick="document.getElementById('csvFile').click()">
                 <div class="dz-icon">📂</div>
-                <p>Trascina qui i tuoi file CSV, oppure clicca per sceglierli</p>
-                <small>Puoi caricare più file insieme — i formati Apple Health vengono riconosciuti automaticamente</small>
-                <input type="file" id="csvFile" accept=".csv" multiple onchange="handleFileInput(event)">
+                <p>Trascina qui i tuoi file, oppure clicca per sceglierli</p>
+                <small>CSV (metriche, ECG) e GPX (percorsi workout) — i formati Apple Health vengono riconosciuti automaticamente. Puoi caricare più file insieme.</small>
+                <input type="file" id="csvFile" accept=".csv,.gpx" multiple onchange="handleFileInput(event)">
+                <input type="file" id="folderInput" webkitdirectory multiple onchange="handleFileInput(event)">
+            </div>
+            <div class="row" style="justify-content:center; margin-top:14px;">
+                <button class="ghost" onclick="event.stopPropagation(); document.getElementById('csvFile').click()">📄 Scegli file</button>
+                <button class="ghost" onclick="event.stopPropagation(); document.getElementById('folderInput').click()" title="Utile per caricare in blocco la cartella electrocardiograms o workout-routes">📁 Scegli cartella</button>
             </div>
         </div>
 
@@ -241,6 +261,35 @@
                 <div>
                     <h4>🔄 Converti XML in CSV</h4>
                     <p>Usa un convertitore come <a href="https://github.com/krumjahn/applehealth" target="_blank">krumjahn/applehealth</a> per generare un CSV per ogni metrica (passi, frequenza cardiaca, peso, sonno, allenamenti, ecc.).</p>
+
+                    <h5>Quali opzioni scegliere</h5>
+                    <p>Per i CSV separati di passi, battiti, peso e distanza scegli le <strong>analisi</strong> delle singole metriche, una alla volta:</p>
+                    <table class="help-table">
+                        <thead>
+                            <tr><th>Opzione</th><th>Dati</th><th>CSV nella cartella <code>health_out</code></th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><code>1</code> — Analyze Steps</td><td>Passi</td><td><code>steps_data.csv</code></td></tr>
+                            <tr><td><code>2</code> — Analyze Distance</td><td>Distanza</td><td><code>distance_data.csv</code></td></tr>
+                            <tr><td><code>3</code> — Analyze Heart Rate</td><td>Frequenza cardiaca</td><td><code>heart_rate_data.csv</code></td></tr>
+                            <tr><td><code>4</code> — Analyze Weight</td><td>Peso</td><td><code>weight_data.csv</code></td></tr>
+                            <tr><td><code>6</code> — Analyze Workouts</td><td>Allenamenti</td><td><code>workout_data.csv</code></td></tr>
+                        </tbody>
+                    </table>
+                    <p>Quindi digita <code>1</code>, attendi che termini e, quando ritorna il menu, procedi con <code>2</code>, <code>3</code>, <code>4</code> e <code>6</code>. Per il sonno puoi aggiungere l'opzione <code>5</code>.</p>
+
+                    <h5>Prima di iniziare</h5>
+                    <p>Visto che vuoi conservare i dati cancellati da Salute:</p>
+                    <ol>
+                        <li>Copia la vecchia cartella <code>health_out</code> in una cartella separata, per esempio <code>health_out_febbraio_2026</code>.</li>
+                        <li>Assicurati che il programma stia leggendo il nuovo <code>export.xml</code>, non quello di febbraio.</li>
+                        <li>Esegui le analisi.</li>
+                        <li>Conserva i nuovi CSV separati dai vecchi: li unirai successivamente, controllando le sovrapposizioni.</li>
+                    </ol>
+
+                    <h5>Quando usare l'opzione 7?</h5>
+                    <p><code>7</code> — Convert XML → CSV (Full Dump) serve all'esportazione completa dei record grezzi, come il grande <code>records.csv</code> che avevi ottenuto. Non è la scelta da cui partire per i cinque CSV separati della dashboard.</p>
+                    <p class="help-note">💡 Non servono le opzioni AI <code>9–18</code> per questa operazione.</p>
                 </div>
             </div>
             <div class="help-step">
@@ -256,6 +305,19 @@
                 <div>
                     <h4>🔍 Funzioni avanzate</h4>
                     <p>Correlazione di Pearson tra due metriche con retta di regressione, Top 10 giorni, trend con media mobile, confronto con periodo precedente ed esportazione PNG/CSV.</p>
+                </div>
+            </div>
+            <div class="help-step">
+                <div class="help-num">5</div>
+                <div>
+                    <h4>🗺️ Far funzionare le mappe (server locale)</h4>
+                    <p>Le mappe dei workout usano le tile di OpenStreetMap: aprendo il file con doppio clic (<code>file://</code>) il browser blocca le richieste e la mappa resta vuota. Avvia quindi un piccolo server locale.</p>
+                    <p><strong>Nel Terminale:</strong></p>
+                    <pre><code>cd /Users/darrigof/work/personale/apple-health_dashboard
+python3 -m http.server 8000 --bind 127.0.0.1</code></pre>
+                    <p>Lascia aperto il Terminale e apri nel browser:</p>
+                    <pre><code>http://localhost:8000</code></pre>
+                    <p class="help-note">💡 Per fermare il server: torna nel Terminale e premi <code>Ctrl + C</code>. La dashboard, l'ECG e il resto funzionano anche senza server; il server serve solo a visualizzare le mappe.</p>
                 </div>
             </div>
         </div>
@@ -353,6 +415,61 @@
                 </div>
             </aside>
         </div>
+
+        <!-- ECG View -->
+        <div class="ecg-panel" id="ecgPanel">
+            <div class="panel">
+                <div class="ecg-header">
+                    <div class="ecg-selector field">
+                        <label>Registrazione ECG</label>
+                        <select id="ecgSelect" onchange="renderECG()"></select>
+                    </div>
+                    <div class="ecg-meta" id="ecgBadges"></div>
+                </div>
+                <div class="ecg-layout">
+                    <div>
+                        <div id="ecgChart" class="chart-container ecg-chart-container"></div>
+                        <div class="ecg-controls">
+                            <button class="ghost" onclick="ecgZoom(10)">🔍 10 s</button>
+                            <button class="ghost" onclick="ecgZoom(5)">🔍 5 s</button>
+                            <button class="ghost" onclick="ecgZoom(0)">↔️ Tutto</button>
+                            <button class="orange" onclick="exportPNG('ecgChart','ecg')">📈 Esporta PNG</button>
+                        </div>
+                    </div>
+                    <div class="ecg-sidebar">
+                        <div class="ecg-info-panel" id="ecgInfo"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="panel" id="ecgEmpty">
+                <p class="empty-hint">Carica i file <code>ecg_*.csv</code> dalla cartella <code>electrocardiograms</code> per visualizzare i tracciati.</p>
+            </div>
+        </div>
+
+        <!-- Routes View -->
+        <div class="routes-panel" id="routesPanel">
+            <div class="panel">
+                <div class="ecg-header">
+                    <div class="ecg-selector field">
+                        <label>Percorso workout</label>
+                        <select id="routeSelect" onchange="renderRoute()"></select>
+                    </div>
+                    <div class="ecg-meta" id="routeBadges"></div>
+                </div>
+                <div class="ecg-layout">
+                    <div>
+                        <div id="routeMap" class="route-map"></div>
+                    </div>
+                    <div class="ecg-sidebar">
+                        <div class="ecg-info-panel" id="routeInfo"></div>
+                        <div id="routeElevation" class="chart-container" style="min-height:220px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="panel" id="routesEmpty">
+                <p class="empty-hint">Carica i file <code>route_*.gpx</code> dalla cartella <code>workout-routes</code> per visualizzare le mappe dei percorsi.</p>
+            </div>
+        </div>
     </div>
 
     <div class="toast" id="toast"></div>
@@ -364,6 +481,10 @@
     let activeIds = [];        // selected metric ids
     let granularity = 'day';
     let quickRange = '365';
+    let ecgs = {};             // id -> { id, label, date, classification, sampleRate, unit, device, samples:[] }
+    let routes = {};           // id -> { id, label, date, points:[{lat,lon,ele,time}], distance, ascent, durationSec }
+    let currentTab = 'dashboard';
+    let leafletMap = null, routeLayer = null;
 
     /* ====================== CSV PARSING ====================== */
     // Robust CSV line splitter that respects double quotes
@@ -545,40 +666,161 @@
     /* ====================== FILE HANDLING ====================== */
     function handleFileInput(e) { ingestFiles(e.target.files); }
 
+    function isECGFile(name, text) {
+        if (/^ecg[_-]/i.test(name)) return true;
+        return /frequenza campione|sample rate|classificazione|classification/i.test(text.slice(0, 400));
+    }
+
     function ingestFiles(fileList) {
-        const files = Array.from(fileList).filter(f => f.name.toLowerCase().endsWith('.csv'));
-        if (!files.length) { toast('Nessun CSV valido'); return; }
-        let pending = files.length, added = 0;
+        const files = Array.from(fileList).filter(f => /\.(csv|gpx)$/i.test(f.name));
+        if (!files.length) { toast('Nessun file CSV o GPX valido'); return; }
+        let pending = files.length;
+        let addedMetrics = 0, addedEcg = 0, addedRoutes = 0;
         files.forEach(file => {
             const reader = new FileReader();
             reader.onload = ev => {
+                const text = ev.target.result;
                 try {
-                    const defs = parseFile(file.name, ev.target.result);
-                    defs.forEach(d => {
-                        d.data.sort((a,b) => a.date - b.date);
-                        d.color = PALETTE[Object.keys(metrics).length % PALETTE.length];
-                        metrics[d.id] = d;
-                        added++;
-                    });
+                    if (/\.gpx$/i.test(file.name)) {
+                        const r = parseGPX(file.name, text);
+                        if (r) { routes[r.id] = r; addedRoutes++; }
+                    } else if (isECGFile(file.name, text)) {
+                        const e2 = parseECG(file.name, text);
+                        if (e2) { ecgs[e2.id] = e2; addedEcg++; }
+                    } else {
+                        const defs = parseFile(file.name, text);
+                        defs.forEach(d => {
+                            d.data.sort((a,b) => a.date - b.date);
+                            d.color = PALETTE[Object.keys(metrics).length % PALETTE.length];
+                            metrics[d.id] = d;
+                            addedMetrics++;
+                        });
+                    }
                 } catch (err) { console.error('Parse error', file.name, err); }
-                if (--pending === 0) finishIngest(added);
+                if (--pending === 0) finishIngest(addedMetrics, addedEcg, addedRoutes);
             };
             reader.readAsText(file);
         });
     }
 
-    function finishIngest(added) {
-        toast(added ? `${added} metriche caricate` : 'Nessun dato riconosciuto');
-        document.getElementById('controlsPanel').style.display = 'block';
-        document.getElementById('dashboard').style.display = 'grid';
-        buildChips();
-        buildCorrSelects();
-        if (!activeIds.length) {
-            const first = Object.keys(metrics)[0];
-            if (first) activeIds = [first];
+    function finishIngest(addedMetrics, addedEcg, addedRoutes) {
+        const parts = [];
+        if (addedMetrics) parts.push(`${addedMetrics} metriche`);
+        if (addedEcg) parts.push(`${addedEcg} ECG`);
+        if (addedRoutes) parts.push(`${addedRoutes} percorsi`);
+        toast(parts.length ? `Caricati: ${parts.join(', ')}` : 'Nessun dato riconosciuto');
+
+        if (Object.keys(metrics).length) {
+            document.getElementById('controlsPanel').style.display = currentTab === 'dashboard' ? 'block' : 'none';
+            buildChips();
+            buildCorrSelects();
+            if (!activeIds.length) {
+                const first = Object.keys(metrics)[0];
+                if (first) activeIds = [first];
+            }
+            applyQuickRange(quickRange, false);
+            if (currentTab === 'dashboard') { document.getElementById('dashboard').style.display = 'grid'; render(); }
         }
-        applyQuickRange(quickRange, false);
-        render();
+        if (addedEcg) buildEcgSelect();
+        if (addedRoutes) buildRouteSelect();
+        updateTabBadges();
+    }
+
+    /* ====================== ECG PARSING ====================== */
+    // Apple Health ECG CSV: key,value metadata header then one voltage sample per line.
+    // Italian export uses comma as decimal separator (e.g. "-117,029").
+    function parseECG(name, text) {
+        const lines = text.split(/\r?\n/);
+        const meta = {};
+        let i = 0, sampleStart = -1;
+        for (; i < lines.length; i++) {
+            const line = lines[i];
+            const cells = splitCSVLine(line);
+            const key = (cells[0] || '').toLowerCase();
+            if (key.includes('nome') || key.includes('name')) meta.name = cells[1];
+            else if (key.includes('registrazione') || key.includes('recorded')) meta.recorded = cells[1];
+            else if (key.includes('classificazione') || key.includes('classification')) meta.classification = cells[1];
+            else if (key.includes('sintomi') || key.includes('symptoms')) meta.symptoms = cells[1];
+            else if (key.includes('versione') || key.includes('software')) meta.software = cells[1];
+            else if (key.includes('dispositivo') || key.includes('device')) meta.device = cells[1];
+            else if (key.includes('frequenza campione') || key.includes('sample rate')) {
+                const hz = parseFloat((cells[1] || '').replace(/[^\d.]/g, ''));
+                meta.sampleRate = isNaN(hz) ? 512 : hz;
+            } else if (key.includes('unit')) meta.unit = cells[1] || 'µV';
+            // The first line that parses as a lone number marks the start of samples
+            if (sampleStart < 0 && cells.length <= 2 && /^-?\d/.test(line.trim()) && !key.includes('nascita')) {
+                // decimal-comma number like "-117,029" => -117.029
+                if (/^-?\d+(,\d+)?$/.test(line.trim())) { sampleStart = i; break; }
+            }
+        }
+        if (sampleStart < 0) return null;
+        const samples = [];
+        for (let j = sampleStart; j < lines.length; j++) {
+            const raw = lines[j].trim();
+            if (!raw) continue;
+            const v = parseFloat(raw.replace(',', '.'));
+            if (!isNaN(v)) samples.push(v);
+        }
+        if (!samples.length) return null;
+        const sr = meta.sampleRate || 512;
+        const date = parseDate(meta.recorded) || parseDate(name.replace(/^ecg[_-]/i, '').replace(/\.csv$/i, '')) || new Date();
+        return {
+            id: name,
+            label: name.replace(/\.csv$/i, ''),
+            date,
+            classification: meta.classification || 'N/D',
+            sampleRate: sr,
+            unit: meta.unit || 'µV',
+            device: meta.device || '',
+            software: meta.software || '',
+            symptoms: meta.symptoms || '',
+            samples,
+            durationSec: samples.length / sr
+        };
+    }
+
+    /* ====================== GPX PARSING ====================== */
+    function parseGPX(name, text) {
+        const doc = new DOMParser().parseFromString(text, 'application/xml');
+        if (doc.querySelector('parsererror')) return null;
+        const pts = Array.from(doc.getElementsByTagName('trkpt')).map(p => {
+            const lat = parseFloat(p.getAttribute('lat'));
+            const lon = parseFloat(p.getAttribute('lon'));
+            const eleEl = p.getElementsByTagName('ele')[0];
+            const timeEl = p.getElementsByTagName('time')[0];
+            return {
+                lat, lon,
+                ele: eleEl ? parseFloat(eleEl.textContent) : null,
+                time: timeEl ? new Date(timeEl.textContent) : null
+            };
+        }).filter(p => isFinite(p.lat) && isFinite(p.lon));
+        if (pts.length < 2) return null;
+
+        let distance = 0, ascent = 0;
+        for (let i = 1; i < pts.length; i++) {
+            distance += haversine(pts[i-1], pts[i]);
+            if (pts[i].ele != null && pts[i-1].ele != null) {
+                const d = pts[i].ele - pts[i-1].ele;
+                if (d > 0) ascent += d;
+            }
+        }
+        const t0 = pts.find(p => p.time)?.time;
+        const t1 = [...pts].reverse().find(p => p.time)?.time;
+        const durationSec = (t0 && t1) ? (t1 - t0) / 1000 : 0;
+        const nameEl = doc.getElementsByTagName('name')[0];
+        const date = t0 || parseDate(name.replace(/^route[_-]/i, '').split('_')[0]) || new Date();
+        return {
+            id: name,
+            label: (nameEl ? nameEl.textContent : name.replace(/\.gpx$/i, '')).trim(),
+            date, points: pts, distance, ascent, durationSec
+        };
+    }
+
+    function haversine(a, b) {
+        const R = 6371000, toRad = d => d * Math.PI / 180;
+        const dLat = toRad(b.lat - a.lat), dLon = toRad(b.lon - a.lon);
+        const s = Math.sin(dLat/2)**2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLon/2)**2;
+        return 2 * R * Math.asin(Math.sqrt(s));
     }
 
     /* ====================== UI BUILDERS ====================== */
@@ -914,6 +1156,212 @@
         root.setAttribute('data-theme', dark ? 'light' : 'dark');
         document.getElementById('themeBtn').textContent = dark ? '🌙' : '☀️';
         if (activeIds.length) render();
+    }
+
+    /* ====================== TABS ====================== */
+    function switchTab(tab) {
+        currentTab = tab;
+        document.querySelectorAll('#tabNav .tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+        const show = (id, disp) => { const el = document.getElementById(id); if (el) el.style.display = disp; };
+
+        show('controlsPanel', tab === 'dashboard' && Object.keys(metrics).length ? 'block' : 'none');
+        show('dashboard', tab === 'dashboard' && Object.keys(metrics).length ? 'grid' : 'none');
+        show('ecgPanel', tab === 'ecg' ? 'block' : 'none');
+        show('routesPanel', tab === 'routes' ? 'block' : 'none');
+
+        if (tab === 'dashboard' && activeIds.length) setTimeout(render, 30);
+        if (tab === 'ecg') setTimeout(renderECG, 30);
+        if (tab === 'routes') setTimeout(() => { renderRoute(); if (leafletMap) leafletMap.invalidateSize(); }, 60);
+    }
+
+    function updateTabBadges() {
+        const ec = Object.keys(ecgs).length, rc = Object.keys(routes).length;
+        const tabEcg = document.querySelector('#tabNav .tab[data-tab="ecg"]');
+        const tabRt = document.querySelector('#tabNav .tab[data-tab="routes"]');
+        if (tabEcg) tabEcg.textContent = ec ? `🫀 ECG (${ec})` : '🫀 ECG';
+        if (tabRt) tabRt.textContent = rc ? `🗺️ Mappe workout (${rc})` : '🗺️ Mappe workout';
+    }
+
+    /* ====================== ECG RENDER ====================== */
+    function ecgBadgeClass(cls) {
+        const c = (cls || '').toLowerCase();
+        if (c.includes('sinus') || c.includes('normal')) return 'normal';
+        if (c.includes('fibrill') || c.includes('afib') || c.includes('atrial')) return 'afib';
+        if (c.includes('elevat') || c.includes('high') || c.includes('alta')) return 'high';
+        return 'other';
+    }
+
+    function buildEcgSelect() {
+        const sel = document.getElementById('ecgSelect');
+        const ids = Object.keys(ecgs).sort((a,b) => ecgs[b].date - ecgs[a].date);
+        sel.innerHTML = ids.map(id => {
+            const e = ecgs[id];
+            return `<option value="${id}">${e.date.toLocaleDateString('it-IT')} · ${e.classification}</option>`;
+        }).join('');
+    }
+
+    let ecgWindowSec = 0; // 0 = full
+    function ecgZoom(sec) { ecgWindowSec = sec; renderECG(); }
+
+    function renderECG() {
+        const ids = Object.keys(ecgs);
+        const hasData = ids.length > 0;
+        document.getElementById('ecgEmpty').style.display = hasData ? 'none' : 'block';
+        document.querySelector('#ecgPanel .panel').style.display = hasData ? 'block' : 'none';
+        if (!hasData) return;
+
+        const sel = document.getElementById('ecgSelect');
+        if (!sel.value || !ecgs[sel.value]) { buildEcgSelect(); }
+        const e = ecgs[sel.value] || ecgs[Object.keys(ecgs)[0]];
+        if (!e) return;
+
+        // badges
+        document.getElementById('ecgBadges').innerHTML =
+            `<span class="badge ${ecgBadgeClass(e.classification)}">${e.classification}</span>`;
+
+        // Build time axis in seconds
+        const n = e.samples.length;
+        const dt = 1 / e.sampleRate;
+        let startIdx = 0, endIdx = n;
+        if (ecgWindowSec > 0) {
+            const win = Math.round(ecgWindowSec * e.sampleRate);
+            startIdx = Math.max(0, Math.floor((n - win) / 2));
+            endIdx = Math.min(n, startIdx + win);
+        }
+        const x = [], y = [];
+        for (let i = startIdx; i < endIdx; i++) { x.push(i * dt); y.push(e.samples[i]); }
+
+        const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const trace = { x, y, type: 'scattergl', mode: 'lines', line: { color: '#ff3b30', width: 1 }, name: 'ECG' };
+        Plotly.react('ecgChart', [trace], {
+            title: { text: `🫀 ${e.label} — ${e.sampleRate} Hz`, font: { size: 15 } },
+            paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+            font: { color: dark ? '#f5f5f7' : '#1d1d1f' },
+            xaxis: { title: 'Tempo (s)', gridcolor: 'rgba(255,0,0,0.12)', dtick: 0.2, zeroline: false },
+            yaxis: { title: `Voltaggio (${e.unit})`, gridcolor: 'rgba(255,0,0,0.12)', zeroline: false },
+            margin: { t: 44, r: 20, b: 50, l: 70 }, showlegend: false
+        }, plotConfig);
+
+        // Info panel + estimated heart rate (simple peak detection)
+        const bpm = estimateBPM(e.samples, e.sampleRate);
+        const rows = [
+            ['Data', e.date.toLocaleString('it-IT')],
+            ['Classificazione', e.classification],
+            ['Freq. media stimata', bpm ? `${bpm} bpm` : 'N/D'],
+            ['Durata', `${e.durationSec.toFixed(1)} s`],
+            ['Campioni', fmtNum(n)],
+            ['Frequenza di campionamento', `${e.sampleRate} Hz`],
+            ['Dispositivo', e.device || 'N/D'],
+            ['Versione software', e.software || 'N/D'],
+            ['Sintomi', e.symptoms || 'Nessuno'],
+        ];
+        document.getElementById('ecgInfo').innerHTML =
+            '<h4>Dettagli registrazione</h4>' +
+            rows.map(([l,v]) => `<div class="ecg-info-row"><span class="ecg-info-label">${l}</span><span class="ecg-info-value">${v}</span></div>`).join('');
+    }
+
+    // Lightweight R-peak based BPM estimate over the whole trace
+    function estimateBPM(samples, sr) {
+        if (samples.length < sr * 3) return null;
+        const mean = samples.reduce((a,b)=>a+b,0) / samples.length;
+        const centered = samples.map(v => v - mean);
+        const max = Math.max(...centered);
+        const thr = max * 0.6;
+        const minGap = Math.round(sr * 0.3); // refractory ~300ms
+        const peaks = [];
+        for (let i = 1; i < centered.length - 1; i++) {
+            if (centered[i] > thr && centered[i] >= centered[i-1] && centered[i] > centered[i+1]) {
+                if (!peaks.length || (i - peaks[peaks.length-1]) > minGap) peaks.push(i);
+            }
+        }
+        if (peaks.length < 2) return null;
+        const intervals = [];
+        for (let i = 1; i < peaks.length; i++) intervals.push((peaks[i] - peaks[i-1]) / sr);
+        const avg = intervals.reduce((a,b)=>a+b,0) / intervals.length;
+        const bpm = Math.round(60 / avg);
+        return (bpm >= 30 && bpm <= 220) ? bpm : null;
+    }
+
+    /* ====================== ROUTE RENDER ====================== */
+    function buildRouteSelect() {
+        const sel = document.getElementById('routeSelect');
+        const ids = Object.keys(routes).sort((a,b) => routes[b].date - routes[a].date);
+        sel.innerHTML = ids.map(id => {
+            const r = routes[id];
+            return `<option value="${id}">${r.date.toLocaleDateString('it-IT')} · ${(r.distance/1000).toFixed(2)} km</option>`;
+        }).join('');
+    }
+
+    function renderRoute() {
+        const ids = Object.keys(routes);
+        const hasData = ids.length > 0;
+        document.getElementById('routesEmpty').style.display = hasData ? 'none' : 'block';
+        document.querySelector('#routesPanel .panel').style.display = hasData ? 'block' : 'none';
+        if (!hasData) return;
+
+        const sel = document.getElementById('routeSelect');
+        if (!sel.value || !routes[sel.value]) buildRouteSelect();
+        const r = routes[sel.value] || routes[Object.keys(routes)[0]];
+        if (!r) return;
+
+        const latlngs = r.points.map(p => [p.lat, p.lon]);
+
+        if (!leafletMap) {
+            leafletMap = L.map('routeMap');
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19, attribution: '© OpenStreetMap'
+            }).addTo(leafletMap);
+        }
+        if (routeLayer) { leafletMap.removeLayer(routeLayer); routeLayer = null; }
+
+        const line = L.polyline(latlngs, { color: '#0071e3', weight: 4, opacity: 0.85 });
+        const start = L.circleMarker(latlngs[0], { radius: 7, color: '#fff', weight: 2, fillColor: '#34c759', fillOpacity: 1 }).bindPopup('Partenza');
+        const end = L.circleMarker(latlngs[latlngs.length-1], { radius: 7, color: '#fff', weight: 2, fillColor: '#ff3b30', fillOpacity: 1 }).bindPopup('Arrivo');
+        routeLayer = L.layerGroup([line, start, end]).addTo(leafletMap);
+        leafletMap.fitBounds(line.getBounds(), { padding: [25, 25] });
+        setTimeout(() => leafletMap.invalidateSize(), 50);
+
+        // Info
+        const pace = r.distance > 0 && r.durationSec > 0 ? (r.durationSec / 60) / (r.distance / 1000) : 0;
+        const paceStr = pace ? `${Math.floor(pace)}:${String(Math.round((pace%1)*60)).padStart(2,'0')} min/km` : 'N/D';
+        const rows = [
+            ['Data', r.date.toLocaleString('it-IT')],
+            ['Distanza', `${(r.distance/1000).toFixed(2)} km`],
+            ['Durata', r.durationSec ? `${Math.floor(r.durationSec/60)} min ${Math.round(r.durationSec%60)} s` : 'N/D'],
+            ['Passo medio', paceStr],
+            ['Dislivello positivo', `${Math.round(r.ascent)} m`],
+            ['Punti GPS', fmtNum(r.points.length)],
+        ];
+        document.getElementById('routeInfo').innerHTML =
+            '<h4>Dettagli percorso</h4>' +
+            rows.map(([l,v]) => `<div class="ecg-info-row"><span class="ecg-info-label">${l}</span><span class="ecg-info-value">${v}</span></div>`).join('');
+        document.getElementById('routeBadges').innerHTML =
+            `<span class="badge other">${r.points.length} punti</span>`;
+
+        // Elevation profile
+        const elePts = r.points.filter(p => p.ele != null);
+        if (elePts.length > 5) {
+            let cum = 0; const xs = [0], ys = [elePts[0].ele];
+            for (let i = 1; i < elePts.length; i++) {
+                cum += haversine(elePts[i-1], elePts[i]);
+                xs.push(cum / 1000); ys.push(elePts[i].ele);
+            }
+            const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+            Plotly.react('routeElevation', [{
+                x: xs, y: ys, type: 'scatter', mode: 'lines', fill: 'tozeroy',
+                line: { color: '#34c759', width: 2 }, fillcolor: 'rgba(52,199,89,0.2)', name: 'Altitudine'
+            }], {
+                title: { text: '⛰️ Profilo altimetrico', font: { size: 14 } },
+                paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: dark ? '#f5f5f7' : '#1d1d1f' },
+                xaxis: { title: 'km', gridcolor: dark ? '#38383a' : '#eee' },
+                yaxis: { title: 'm', gridcolor: dark ? '#38383a' : '#eee' },
+                margin: { t: 36, r: 16, b: 40, l: 50 }, showlegend: false
+            }, plotConfig);
+            document.getElementById('routeElevation').style.display = 'block';
+        } else {
+            document.getElementById('routeElevation').style.display = 'none';
+        }
     }
 
     /* ====================== MISC ====================== */
