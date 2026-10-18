@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🩺 Apple Health PRO Dashboard v3.0</title>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 32px; background: #f5f5f7; color: #1d1d1f; }
+        .container { max-width: 1600px; margin: 0 auto; }
+        .header { margin-bottom: 32px; }
+        .header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; margin: 0; color: #1d1d1f; }
+        .header p { color: #86868b; font-size: 15px; margin: 6px 0 0 0; }
+
+        /* Controls */
+        .controls { background: #fff; padding: 24px; border-radius: 16px; margin-bottom: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 1px 1px rgba(0,0,0,0.03); border: 1px solid #e8e8ed; }
+        .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+        .row label { font-size: 13px; font-weight: 500; color: #6e6e73; margin-right: 8px; white-space: nowrap; }
+        select, input { padding: 10px 14px; border: 1px solid #d2d2d7; border-radius: 10px; font-size: 14px; background: #fff; }
+        input[type="file"] { padding: 8px; }
+        button { background: #0071e3; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 500; font-size: 14px; transition: background 0.15s; }
+        button:hover { background: #0077ed; }
+        button:active { background: #005bb5; }
+        button.secondary { background: #34c759; }
+        button.secondary:hover { background: #2db252; }
+        button.export { background: #ff9500; }
+        button.export:hover { background: #e08400; }
+
+        /* Charts */
+        .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 24px; margin-bottom: 24px; }
+        .chart-container { width: 100%; min-height: 400px; background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 1px 1px rgba(0,0,0,0.03); border: 1px solid #e8e8ed; box-sizing: border-box; }
+
+        /* Stats Grid */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: #fff; border: 1px solid #e8e8ed; padding: 20px; border-radius: 16px; text-align: left; }
+        .stat-number { font-size: 1.75rem; font-weight: 700; margin-bottom: 4px; color: #1d1d1f; line-height: 1.2; }
+        .stat-label { font-size: 12px; color: #86868b; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+        .stat-card.primary .stat-number { color: #0071e3; }
+        .stat-card.warning .stat-number { color: #ff9500; }
+        .stat-card.danger .stat-number { color: #ff3b30; }
+        .stat-card.success .stat-number { color: #34c759; }
+
+        /* Metrics Grid */
+        .metric-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-top: 16px; }
+        .metric-item { padding: 12px 16px; background: #f5f5f7; border-radius: 10px; cursor: pointer; border: 1px solid #e8e8ed; transition: all 0.15s; font-size: 13px; text-align: center; font-weight: 500; }
+        .metric-item:hover { border-color: #0071e3; background: #e8f0fe; }
+        .metric-item.active { border-color: #0071e3; background: #0071e3; color: white; }
+
+        /* Data Preview */
+        #dataPreview { background: #f5f5f7; padding: 16px; border-radius: 10px; margin-top: 16px; max-height: 120px; overflow: auto; font-size: 13px; color: #424245; font-family: monospace; }
+
+        /* Top 10 - Compact Grid Layout */
+        .top10-container { background: #fff; padding: 20px; border-radius: 16px; border: 1px solid #e8e8ed; box-shadow: 0 1px 2px rgba(0,0,0,0.04); margin-bottom: 24px; }
+        .top10-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .top10-header h3 { margin: 0; font-size: 15px; font-weight: 600; color: #1d1d1f; }
+        .top10-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; }
+        .top10-item { display: flex; align-items: center; padding: 10px 14px; background: #fafafa; border-radius: 10px; border: 1px solid #f0f0f0; transition: all 0.15s; }
+        .top10-item:hover { background: #f0f0f0; border-color: #e8e8ed; }
+        .top10-rank { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #e8e8ed; border-radius: 6px; font-weight: 700; font-size: 12px; color: #0071e3; margin-right: 12px; flex-shrink: 0; }
+        .top10-rank.top1 { background: #fff9e6; color: #d4a800; }
+        .top10-rank.top2 { background: #f0f0f0; color: #86868b; }
+        .top10-rank.top3 { background: #fce8e8; color: #c44c4c; }
+        .top10-info { flex: 1; min-width: 0; }
+        .top10-date { font-size: 13px; font-weight: 500; color: #1d1d1f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .top10-value { font-size: 12px; color: #86868b; margin-top: 2px; }
+
+        /* Export Section */
+        .export-section { text-align: center; margin-top: 32px; padding: 24px; background: #fff; border-radius: 16px; border: 1px solid #e8e8ed; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+        .export-section h3 { margin: 0 0 16px 0; font-size: 15px; font-weight: 600; color: #1d1d1f; }
+        .export-section .row { justify-content: center; }
+
+        /* Dashboard Layout - Main content area */
+        .dashboard-layout { display: grid; grid-template-columns: 1fr 320px; gap: 24px; }
+        .charts-section { min-width: 0; }
+        .sidebar-section { display: flex; flex-direction: column; gap: 24px; position: sticky; top: 32px; max-height: calc(100vh - 64px); overflow-y: auto; }
+
+        @media (max-width: 1024px) {
+            .dashboard-layout { grid-template-columns: 1fr; }
+            .sidebar-section { position: static; max-height: none; }
+        }
+
+        @media (max-width: 768px) {
+            body { padding: 16px; }
+            .row { flex-direction: column; align-items: stretch; }
+            .row label { margin-right: 0; margin-bottom: 4px; }
+            .chart-grid { grid-template-columns: 1fr; }
+            .top10-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Help Section */
+        .help-toggle-btn {
+            background: #e8e8ed;
+            color: #1d1d1f;
+            padding: 8px 16px;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+        .help-toggle-btn:hover {
+            background: #d2d2d7;
+        }
+
+        .help-section {
+            background: #fff;
+            border: 1px solid #e8e8ed;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 1px 1px rgba(0,0,0,0.03);
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .help-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .help-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+        .help-close-btn {
+            background: #ff3b30;
+            color: white;
+            padding: 6px 14px;
+            font-size: 12px;
+            border-radius: 8px;
+        }
+        .help-close-btn:hover {
+            background: #d70015;
+        }
+
+        .help-step {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 28px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .help-step:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .help-step-number {
+            width: 36px;
+            height: 36px;
+            background: #0071e3;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 15px;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+
+        .help-step-content {
+            flex: 1;
+            min-width: 0;
+        }
+        .help-step-content h4 {
+            margin: 0 0 12px 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+        .help-step-content h5 {
+            margin: 16px 0 8px 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #6e6e73;
+        }
+        .help-step-content p {
+            margin: 8px 0;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #424245;
+        }
+        .help-step-content ol, .help-step-content ul {
+            margin: 8px 0;
+            padding-left: 20px;
+            font-size: 14px;
+            line-height: 1.7;
+            color: #424245;
+        }
+        .help-step-content li {
+            margin-bottom: 6px;
+        }
+        .help-step-content code {
+            background: #f5f5f7;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #0071e3;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+        .help-step-content pre {
+            background: #1d1d1f;
+            color: #f5f5f7;
+            padding: 16px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 12px 0;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .help-step-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+        .help-note {
+            background: #e8f0fe;
+            border-left: 3px solid #0071e3;
+            padding: 10px 14px;
+            border-radius: 0 8px 8px 0;
+            font-size: 13px !important;
+            color: #1d1d1f !important;
+            margin: 12px 0 !important;
+        }
+        .help-note code {
+            background: #d6e4f0;
+        }
+
+        @media (max-width: 768px) {
+            .help-step {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .help-step-number {
+                width: 28px;
+                height: 28px;
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🩺 Apple Health Dashboard</h1>
+            <p>Analisi dati avanzata</p>
+            <button class="help-toggle-btn" onclick="toggleHelp()" id="helpBtn">❓ Aiuto</button>
+        </div>
+
+        <div class="controls">
+        <div class="row">
+            <input type="file" id="csvFile" accept=".csv" multiple onchange="loadFiles()">
+            <button onclick="setDateLastYear()">📅 Ultimo Anno</button>
+            <button onclick="setDateAllTime()" class="secondary">🌍 Tutto</button>
+        </div>
+        
+        <div class="date-inputs">
+            <label>Dal:</label><input type="date" id="startDate">
+            <label>Al:</label><input type="date" id="endDate">
+            <button onclick="updateCharts()">🔄 Aggiorna</button>
+        </div>
+        
+        <div>
+            <label><strong>📊 Metriche caricate (clicca per visualizzare):</strong></label>
+            <div class="metric-grid" id="metricGrid"></div>
+        </div>
+        
+        <div class="row">
+            <label>🔗 Correlazione con: </label>
+            <select id="corrMetric2">
+                <option value="">-- Seleziona 2a metrica --</option>
+            </select>
+            <button onclick="showCorrelation()">📊 Analizza</button>
+        </div>
+        
+        <div id="dataPreview"></div>
+    </div>
+
+    <div id="helpSection" class="help-section" style="display:none;">
+        <div class="help-header">
+            <h3>📖 Guida: Come usare la Dashboard</h3>
+            <button class="help-close-btn" onclick="toggleHelp()">✕ Chiudi</button>
+        </div>
+
+        <div class="help-step">
+            <div class="help-step-number">1</div>
+            <div class="help-step-content">
+                <h4>📱 Esporta dati da iPhone</h4>
+                <ol>
+                    <li>Apri l'app <strong>Salute</strong> sul tuo iPhone</li>
+                    <li>Tocca la tua <strong>foto profilo</strong> in alto a destra</li>
+                    <li>Scorri in basso e seleziona <strong>"Esporta tutti i dati sulla salute"</strong></li>
+                    <li>Attendi la preparazione (può richiedere alcuni minuti)</li>
+                    <li>Scegli <strong>"Salva su File"</strong> e salva lo <strong>ZIP</strong> su iCloud Drive o sul dispositivo</li>
+                </ol>
+                <p class="help-note">💡 Il file ZIP contiene un file <code>export.xml</code> con tutti i tuoi dati.</p>
+            </div>
+        </div>
+
+        <div class="help-step">
+            <div class="help-step-number">2</div>
+            <div class="help-step-content">
+                <h4>🔄 Converti XML in CSV</h4>
+                <p>L'XML di Apple Health non è leggibile direttamente. Devi convertirlo in file CSV (uno per metrica).</p>
+
+                <h5>Opzioni consigliate:</h5>
+                <ul>
+                    <li><strong>💻 Krumjahn AppleHealth (Python)</strong> — Il tool di riferimento per la conversione. Scaricalo da <a href="https://github.com/krumjahn/applehealth" target="_blank">github.com/krumjahn/applehealth</a>.</li>
+                </ul>
+
+                <h5>Esempio script Python:</h5>
+                <pre class="help-code"><code>import xml.etree.ElementTree as ET
+import csv
+from collections import defaultdict
+
+tree = ET.parse('export.xml')
+root = tree.getroot()
+
+records = defaultdict(list)
+for record in root.findall('.//Record'):
+    date = record.get('startDate')[:10]
+    metric = record.get('type').replace('HKQuantityTypeIdentifier', '')
+    value = float(record.get('value'))
+    records[metric].append((date, value))
+
+for metric, data in records.items():
+    with open(f'{metric}.csv', 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['date', 'value'])
+        writer.writerows(sorted(data))</code></pre>
+            </div>
+        </div>
+
+        <div class="help-step">
+            <div class="help-step-number">3</div>
+            <div class="help-step-content">
+                <h4>📊 Importa in Dashboard</h4>
+                <ol>
+                    <li>Clicca <strong>"Scegli file"</strong> (o trascina i CSV nell'area di upload)</li>
+                    <li>Seleziona <strong>più file CSV</strong> contemporaneamente (⌘/Ctrl + clic)</li>
+                    <li>Le metriche appariranno come pulsanti sotto "Metriche caricate"</li>
+                    <li>Clicca una metrica per visualizzare grafici, statistiche e Top 10</li>
+                    <li>Usa i filtri data ("Ultimo Anno", "Tutto", o date personalizzate)</li>
+                </ol>
+                <p class="help-note">💡 La dashboard supporta: Passi, Frequenza cardiaca, Allenamenti, Peso, Calorie, Distanza, Sonno, VO2 Max, HRV, Ossigeno, Pressione, Glicemia, Temperatura.</p>
+            </div>
+        </div>
+
+        <div class="help-step">
+            <div class="help-step-number">4</div>
+            <div class="help-step-content">
+                <h4>🔍 Funzionalità avanzate</h4>
+                <ul>
+                    <li><strong>Correlazione:</strong> Seleziona due metriche e clicca "Analizza" per vedere correlazione di Pearson</li>
+                    <li><strong>Top 10 Giorni:</strong> Nella sidebar, vedi i giorni con valori massimi per la metrica attiva</li>
+                    <li><strong>Esportazione:</strong> Scarica grafici come PNG o tutti i dati come CSV</li>
+                    <li><strong>Media mobile 7gg:</strong> Nel grafico distribuzione, linea arancione = trend settimanale</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-layout">
+        <div class="main-content">
+            <div class="stats-grid" id="statsContainer"></div>
+            <div id="chart1" class="chart-container"></div>
+            <div id="chart2" class="chart-container"></div>
+            <div id="chart3" class="chart-container" style="display:none;"></div>
+            <div class="export-section">
+                <h3>💾 Esportazioni</h3>
+                <div class="row" style="justify-content: center;">
+                    <button onclick="exportPNG('chart1', 'trend')" class="export">📈 Scarica Grafico 1</button>
+                    <button onclick="exportPNG('chart2', 'stats')" class="export">📊 Scarica Grafico 2</button>
+                    <button onclick="exportAllCSV()" class="secondary">📄 Scarica Tutti CSV</button>
+                </div>
+            </div>
+        </div>
+        <aside class="sidebar-section">
+            <div id="top10Container" class="top10-container" style="display:none;">
+                <div class="top10-header"><h3>🏆 Top 10 Giorni</h3></div>
+                <div id="top10List" class="top10-grid"></div>
+            </div>
+        </aside>
+    </div>
+    </div> <!-- Fine container -->
+
+    <script>
+        // Aggiunta per responsive Plotly
+        window.onresize = function() {
+            ['chart1', 'chart2', 'chart3'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el && el.offsetWidth > 0 && el.offsetHeight > 0) {
+                    Plotly.Plots.resize(el);
+                }
+            });
+        };
+
+        let csvData = {};
+        let currentMetric = null;
+
+        function parseISODate(str) {
+            if (!str) return null;
+            const isoMatch = str.match(/(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})/);
+            if (isoMatch) return new Date(`${isoMatch[1]}T${isoMatch[2]}`);
+            return new Date(str);
+        }
+
+        function parseCSV(text, filename) {
+            const rows = text.split('\n').map(row => row.split(',').map(cell => cell.trim()));
+            const headers = rows[0];
+            
+            if (filename.includes('workouts')) {
+                return rows.slice(1).map(row => {
+                    const startDate = parseISODate(row[5]);
+                    const duration = parseFloat(row[7]) || 0;
+                    const workoutType = row[6] || 'Unknown';
+                    return { date: startDate, value: duration, type: workoutType };
+                }).filter(d => d.date && !isNaN(d.value));
+            }
+            
+            return rows.slice(1).map(row => {
+                const date = parseISODate(row[0]);
+                let value = NaN;
+                for (let i = 1; i < row.length; i++) {
+                    value = parseFloat(row[i]);
+                    if (!isNaN(value)) break;
+                }
+                return { date, value };
+            }).filter(d => d.date && !isNaN(d.value));
+        }
+
+        function loadFiles() {
+            const files = document.getElementById('csvFile').files;
+            const grid = document.getElementById('metricGrid');
+            const corrSelect = document.getElementById('corrMetric2');
+            grid.innerHTML = '';
+            corrSelect.innerHTML = '<option value="">-- Seleziona --</option>';
+            
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const data = parseCSV(e.target.result, file.name);
+                    if (data.length > 0) {
+                        csvData[file.name] = { 
+                            name: file.name.replace('.csv', ''), 
+                            data,
+                            filename: file.name 
+                        };
+                        
+                        const btn = document.createElement('div');
+                        btn.className = 'metric-item';
+                        btn.textContent = file.name;
+                        btn.onclick = () => selectMetric(file.name);
+                        grid.appendChild(btn);
+                        
+                        const opt = new Option(file.name, file.name);
+                        corrSelect.appendChild(opt);
+                    }
+                };
+                reader.readAsText(file);
+            });
+            
+            setDateLastYear();
+        }
+
+        function selectMetric(filename) {
+            document.querySelectorAll('.metric-item').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+            currentMetric = csvData[filename];
+            document.getElementById('chart3').style.display = 'none';
+            updateCharts();
+        }
+
+        function setDateLastYear() {
+            const today = new Date();
+            const oneYear = new Date();
+            oneYear.setFullYear(today.getFullYear() - 1);
+            document.getElementById('startDate').value = oneYear.toISOString().split('T')[0];
+            document.getElementById('endDate').value = today.toISOString().split('T')[0];
+        }
+
+        function setDateAllTime() {
+    if (Object.keys(csvData).length === 0) {
+        alert('⚠️ Carica prima dei CSV!');
+        return;
+    }
+    
+    // DEVI INIZIALIZZARE allDates PRIMA del forEach!
+    const allDates = [];
+    
+    Object.values(csvData).forEach(m => {
+        m.data.forEach(d => {
+            if (d.date && d.date instanceof Date && !isNaN(d.date.getTime())) {
+                allDates.push(d.date.getTime());
+            }
+        });
+    });
+    
+    // Controllo date valide
+    if (allDates.length === 0) {
+        alert('⚠️ Nessun dato con date valide!');
+        console.error('csvData:', csvData);
+        return;
+    }
+    
+    console.log('📊 Trovate', allDates.length, 'date valide');
+    
+    const min = new Date(Math.min(...allDates));
+    const max = new Date(Math.max(...allDates));
+    
+    console.log('📅 Range:', min.toLocaleDateString('it-IT'), '→', max.toLocaleDateString('it-IT'));
+    
+    document.getElementById('startDate').value = min.toISOString().split('T')[0];
+    document.getElementById('endDate').value = max.toISOString().split('T')[0];
+    
+    if (currentMetric) {
+        updateCharts();
+    }
+}
+
+
+        function updateCharts() {
+            if (!currentMetric) return;
+            
+            const startDate = new Date(document.getElementById('startDate').value + 'T00:00:00');
+            const endDate = new Date(document.getElementById('endDate').value + 'T23:59:59');
+            
+            let filtered = currentMetric.data.filter(d => d.date >= startDate && d.date <= endDate);
+            filtered.sort((a,b) => a.date - b.date);
+            
+            if (filtered.length === 0) {
+                alert('Nessun dato nel range selezionato');
+                return;
+            }
+            
+            updateStats(filtered);
+            updateTop10(filtered);
+
+            // Grafico 1: Trend
+            const trace1 = {
+                x: filtered.map(d => d.date),
+                y: filtered.map(d => d.value),
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: currentMetric.name,
+                line: {color: '#007aff', width: 3},
+                marker: {size: 6}
+            };
+            
+            Plotly.newPlot('chart1', [trace1], {
+                title: `📈 ${currentMetric.name} (${filtered.length} punti)`,
+                xaxis: {title: 'Data'},
+                yaxis: {title: currentMetric.name}
+            });
+            
+            // Grafico 2: Distribuzione giornaliera + media mobile
+            const dailyData = aggregateByDay(filtered);
+            const movingAvg = calculateMovingAvg(dailyData, 7);
+            
+            const trace2 = {
+                x: dailyData.map(d => d.date),
+                y: dailyData.map(d => d.value),
+                type: 'bar',
+                name: 'Giornaliero',
+                marker: {color: 'rgba(0,122,255,0.6)'}
+            };
+            
+            const trace3 = {
+                x: movingAvg.map(d => d.date),
+                y: movingAvg.map(d => d.value),
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Media 7gg',
+                line: {color: '#ff9500', width: 4}
+            };
+            
+            Plotly.newPlot('chart2', [trace2, trace3], {
+                title: `📊 Distribuzione giornaliera + Trend`,
+                xaxis: {title: 'Data'},
+                yaxis: {title: currentMetric.name}
+            });
+            
+            showPreview(filtered.slice(0, 10));
+        }
+
+        function aggregateByDay(data) {
+            const daily = {};
+            data.forEach(d => {
+                const key = d.date.toISOString().split('T')[0];
+                daily[key] = (daily[key] || 0) + d.value;
+            });
+            return Object.entries(daily).map(([date, value]) => ({
+                date: new Date(date),
+                value
+            })).sort((a,b) => a.date - b.date);
+        }
+
+        function calculateMovingAvg(data, window) {
+            if (data.length < window) return [];
+            const result = [];
+            for (let i = window - 1; i < data.length; i++) {
+                const slice = data.slice(i - window + 1, i + 1);
+                const avg = slice.reduce((sum, d) => sum + d.value, 0) / window;
+                result.push({ date: data[i].date, value: avg });
+            }
+            return result;
+        }
+
+        function showCorrelation() {
+            const metric2Name = document.getElementById('corrMetric2').value;
+            if (!currentMetric || !metric2Name || !csvData[metric2Name]) {
+                alert('Seleziona prima una metrica principale e una per correlazione');
+                return;
+            }
+            
+            const metric2 = csvData[metric2Name];
+            const startDate = new Date(document.getElementById('startDate').value);
+            const endDate = new Date(document.getElementById('endDate').value);
+            
+            // Allinea le date
+            const aligned = alignDatasets(currentMetric.data, metric2.data, startDate, endDate);
+            
+            if (aligned.length < 3) {
+                alert('Troppo pochi dati sovrapposti per correlazione');
+                return;
+            }
+            
+            const correlation = calculateCorrelation(aligned.map(d => d.value1), aligned.map(d => d.value2));
+            
+            // Grafico scatter
+            const trace = {
+                x: aligned.map(d => d.value1),
+                y: aligned.map(d => d.value2),
+                mode: 'markers',
+                type: 'scatter',
+                name: 'Correlazione',
+                marker: {size: 10, color: '#34c759'}
+            };
+            
+            document.getElementById('chart3').style.display = 'block';
+            Plotly.newPlot('chart3', [trace], {
+                title: `🔗 Correlazione: ${currentMetric.name} vs ${metric2.name} (r=${correlation.toFixed(3)})`,
+                xaxis: {title: currentMetric.name},
+                yaxis: {title: metric2.name}
+            });
+            
+            document.getElementById('dataPreview').innerHTML = `
+                <strong>📊 Analisi Correlazione:</strong><br>
+                Coefficiente Pearson: <strong>${correlation.toFixed(3)}</strong><br>
+                Interpretazione: ${interpretCorrelation(correlation)}<br>
+                Punti analizzati: ${aligned.length}
+            `;
+        }
+
+        function alignDatasets(data1, data2, startDate, endDate) {
+            const map1 = {};
+            data1.forEach(d => {
+                if (d.date >= startDate && d.date <= endDate) {
+                    const key = d.date.toISOString().split('T')[0];
+                    map1[key] = (map1[key] || 0) + d.value;
+                }
+            });
+            
+            const map2 = {};
+            data2.forEach(d => {
+                if (d.date >= startDate && d.date <= endDate) {
+                    const key = d.date.toISOString().split('T')[0];
+                    map2[key] = (map2[key] || 0) + d.value;
+                }
+            });
+            
+            const aligned = [];
+            Object.keys(map1).forEach(date => {
+                if (map2[date]) {
+                    aligned.push({ date, value1: map1[date], value2: map2[date] });
+                }
+            });
+            return aligned;
+        }
+
+        function calculateCorrelation(x, y) {
+            const n = x.length;
+            const sumX = x.reduce((a,b) => a+b, 0);
+            const sumY = y.reduce((a,b) => a+b, 0);
+            const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
+            const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
+            const sumY2 = y.reduce((sum, yi) => sum + yi * yi, 0);
+            
+            const numerator = n * sumXY - sumX * sumY;
+            const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+            
+            return denominator === 0 ? 0 : numerator / denominator;
+        }
+
+        function interpretCorrelation(r) {
+            const abs = Math.abs(r);
+            if (abs > 0.7) return '🟢 Forte correlazione';
+            if (abs > 0.4) return '🟡 Correlazione moderata';
+            if (abs > 0.2) return '🟠 Correlazione debole';
+            return '⚪ Nessuna correlazione significativa';
+        }
+
+
+        // Sistema di riconoscimento metrica e unità
+function detectMetricType(filename, metricName) {
+    const name = (filename + metricName).toLowerCase();
+    
+    if (name.includes('step')) return 'steps';
+    if (name.includes('heart') || name.includes('bpm')) return 'heart_rate';
+    if (name.includes('workout')) return 'workout';
+    if (name.includes('weight') || name.includes('body_mass') || name.includes('peso')) return 'weight';
+    if (name.includes('calor')) return 'calories';
+    if (name.includes('distance') || name.includes('distanza')) return 'distance';
+    if (name.includes('sleep') || name.includes('sonno')) return 'sleep';
+    if (name.includes('vo2')) return 'vo2max';
+    if (name.includes('hrv')) return 'hrv';
+    if (name.includes('oxygen') || name.includes('spo2')) return 'oxygen';
+    if (name.includes('blood_pressure') || name.includes('pressione')) return 'blood_pressure';
+    if (name.includes('glucose') || name.includes('glicemia')) return 'glucose';
+    if (name.includes('temperature') || name.includes('temperatura')) return 'temperature';
+    
+    return 'generic';
+}
+
+function formatValueWithUnit(value, metricType, isTotal = false) {
+    switch(metricType) {
+        case 'steps':
+            return value.toLocaleString('it-IT', {maximumFractionDigits: 0}) + ' passi';
+        
+        case 'heart_rate':
+            return value.toFixed(0) + ' bpm';
+        
+        case 'workout':
+            if (isTotal && value > 60) {
+                const hours = (value / 60).toFixed(1);
+                return hours + ' ore';
+            }
+            return value.toFixed(0) + ' min';
+        
+        case 'weight':
+            return value.toFixed(1) + ' kg';
+        
+        case 'calories':
+            return value.toFixed(0) + ' kcal';
+        
+        case 'distance':
+            if (value > 1000) {
+                return (value / 1000).toFixed(2) + ' km';
+            }
+            return value.toFixed(0) + ' m';
+        
+        case 'sleep':
+            const hours = Math.floor(value / 60);
+            const mins = Math.round(value % 60);
+            return `${hours}h ${mins}min`;
+        
+        case 'vo2max':
+            return value.toFixed(1) + ' mL/(kg·min)';
+        
+        case 'hrv':
+            return value.toFixed(0) + ' ms';
+        
+        case 'oxygen':
+            return value.toFixed(1) + ' %';
+        
+        case 'blood_pressure':
+            return value.toFixed(0) + ' mmHg';
+        
+        case 'glucose':
+            return value.toFixed(0) + ' mg/dL';
+        
+        case 'temperature':
+            return value.toFixed(1) + ' °C';
+        
+        default:
+            return value.toFixed(1);
+    }
+}
+
+
+        function updateStats(data) {
+    // Identifica tipo metrica
+    const metricType = detectMetricType(currentMetric.filename, currentMetric.name);
+    
+    const avg = data.reduce((a,b) => a + b.value, 0) / data.length;
+    const max = Math.max(...data.map(d => d.value));
+    const min = Math.min(...data.map(d => d.value));
+    const total = data.reduce((a,b) => a + b.value, 0);
+    
+    // Formatta con unità appropriate
+    const avgFormatted = formatValueWithUnit(avg, metricType);
+    const maxFormatted = formatValueWithUnit(max, metricType);
+    const minFormatted = formatValueWithUnit(min, metricType);
+    const totalFormatted = formatValueWithUnit(total, metricType, true);
+    
+    document.getElementById('statsContainer').innerHTML = `
+        <div class="stat-card">
+            <div class="stat-number">${avgFormatted}</div>
+            <div>Media</div>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <div class="stat-number">${maxFormatted}</div>
+            <div>Massimo</div>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <div class="stat-number">${minFormatted}</div>
+            <div>Minimo</div>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+            <div class="stat-number">${totalFormatted}</div>
+            <div>Totale</div>
+        </div>
+    `;
+}
+
+
+        function updateTop10(data) {
+            const container = document.getElementById('top10Container');
+            const list = document.getElementById('top10List');
+            const metricType = detectMetricType(currentMetric.filename, currentMetric.name);
+
+            const sorted = [...data].sort((a,b) => b.value - a.value).slice(0, 10);
+
+            list.innerHTML = sorted.map((d, i) => `
+                <div class="top10-item">
+                    <div class="top10-rank top${i+1}">${i + 1}</div>
+                    <div class="top10-info">
+                        <div class="top10-date">${d.date.toLocaleDateString('it-IT')}</div>
+                        <div class="top10-value">${formatValueWithUnit(d.value, metricType)}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            container.style.display = 'block';
+        }
+
+        function exportPNG(chartId, name) {
+            Plotly.downloadImage(chartId, {
+                format: 'png',
+                width: 1920,
+                height: 1080,
+                filename: `apple_health_${name}_${new Date().toISOString().split('T')[0]}`
+            });
+        }
+
+        function exportAllCSV() {
+            if (Object.keys(csvData).length === 0) return;
+            
+            const zip = [];
+            Object.values(csvData).forEach(metric => {
+                let csv = 'date,value\n';
+                metric.data.forEach(d => {
+                    csv += `${d.date.toISOString()},${d.value}\n`;
+                });
+                
+                const blob = new Blob([csv], {type: 'text/csv'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${metric.name}_export.csv`;
+                a.click();
+            });
+        }
+
+        function toggleHelp() {
+            const section = document.getElementById('helpSection');
+            const btn = document.getElementById('helpBtn');
+
+            if (section.style.display === 'none') {
+                section.style.display = 'block';
+                btn.textContent = '✕ Chiudi aiuto';
+                btn.style.background = '#ff3b30';
+            } else {
+                section.style.display = 'none';
+                btn.textContent = '❓ Aiuto';
+                btn.style.background = '#e8e8ed';
+            }
+        }
+
+        window.onload = setDateLastYear;
+    </script>
+</body>
+</html>

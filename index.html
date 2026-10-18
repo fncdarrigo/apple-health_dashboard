@@ -3,890 +3,891 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🩺 Apple Health PRO Dashboard v3.0</title>
+    <title>Apple Health Dashboard</title>
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 32px; background: #f5f5f7; color: #1d1d1f; }
-        .container { max-width: 1600px; margin: 0 auto; }
-        .header { margin-bottom: 32px; }
-        .header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; margin: 0; color: #1d1d1f; }
-        .header p { color: #86868b; font-size: 15px; margin: 6px 0 0 0; }
+        :root {
+            --bg: #f5f5f7;
+            --surface: #ffffff;
+            --surface-2: #fafafa;
+            --border: #e8e8ed;
+            --border-2: #d2d2d7;
+            --text: #1d1d1f;
+            --text-muted: #86868b;
+            --text-soft: #6e6e73;
+            --accent: #0071e3;
+            --accent-hover: #0077ed;
+            --green: #34c759;
+            --orange: #ff9500;
+            --red: #ff3b30;
+            --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 1px 1px rgba(0,0,0,0.03);
+            --radius: 16px;
+            --radius-sm: 10px;
+        }
+        [data-theme="dark"] {
+            --bg: #000000;
+            --surface: #1c1c1e;
+            --surface-2: #2c2c2e;
+            --border: #38383a;
+            --border-2: #48484a;
+            --text: #f5f5f7;
+            --text-muted: #8e8e93;
+            --text-soft: #aeaeb2;
+            --shadow: 0 1px 3px rgba(0,0,0,0.4);
+        }
 
-        /* Controls */
-        .controls { background: #fff; padding: 24px; border-radius: 16px; margin-bottom: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 1px 1px rgba(0,0,0,0.03); border: 1px solid #e8e8ed; }
-        .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
-        .row label { font-size: 13px; font-weight: 500; color: #6e6e73; margin-right: 8px; white-space: nowrap; }
-        select, input { padding: 10px 14px; border: 1px solid #d2d2d7; border-radius: 10px; font-size: 14px; background: #fff; }
-        input[type="file"] { padding: 8px; }
-        button { background: #0071e3; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 500; font-size: 14px; transition: background 0.15s; }
-        button:hover { background: #0077ed; }
-        button:active { background: #005bb5; }
-        button.secondary { background: #34c759; }
-        button.secondary:hover { background: #2db252; }
-        button.export { background: #ff9500; }
-        button.export:hover { background: #e08400; }
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0; padding: 32px; background: var(--bg); color: var(--text);
+            transition: background 0.25s, color 0.25s;
+        }
+        .container { max-width: 1680px; margin: 0 auto; }
 
-        /* Charts */
-        .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 24px; margin-bottom: 24px; }
-        .chart-container { width: 100%; min-height: 400px; background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 1px 1px rgba(0,0,0,0.03); border: 1px solid #e8e8ed; box-sizing: border-box; }
+        /* Header */
+        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
+        .header .title h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+        .header .title p { color: var(--text-muted); font-size: 15px; margin: 6px 0 0 0; }
+        .header-actions { display: flex; gap: 10px; align-items: center; }
 
-        /* Stats Grid */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
-        .stat-card { background: #fff; border: 1px solid #e8e8ed; padding: 20px; border-radius: 16px; text-align: left; }
-        .stat-number { font-size: 1.75rem; font-weight: 700; margin-bottom: 4px; color: #1d1d1f; line-height: 1.2; }
-        .stat-label { font-size: 12px; color: #86868b; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
-        .stat-card.primary .stat-number { color: #0071e3; }
-        .stat-card.warning .stat-number { color: #ff9500; }
-        .stat-card.danger .stat-number { color: #ff3b30; }
-        .stat-card.success .stat-number { color: #34c759; }
+        /* Buttons */
+        button {
+            background: var(--accent); color: #fff; border: none; padding: 10px 18px;
+            border-radius: var(--radius-sm); cursor: pointer; font-weight: 500; font-size: 14px;
+            transition: background 0.15s, transform 0.05s; white-space: nowrap;
+        }
+        button:hover { background: var(--accent-hover); }
+        button:active { transform: scale(0.98); }
+        button.ghost { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+        button.ghost:hover { background: var(--border); }
+        button.green { background: var(--green); }
+        button.orange { background: var(--orange); }
+        button.danger { background: var(--red); }
+        button:disabled { opacity: 0.45; cursor: not-allowed; }
 
-        /* Metrics Grid */
-        .metric-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-top: 16px; }
-        .metric-item { padding: 12px 16px; background: #f5f5f7; border-radius: 10px; cursor: pointer; border: 1px solid #e8e8ed; transition: all 0.15s; font-size: 13px; text-align: center; font-weight: 500; }
-        .metric-item:hover { border-color: #0071e3; background: #e8f0fe; }
-        .metric-item.active { border-color: #0071e3; background: #0071e3; color: white; }
+        .panel {
+            background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+            box-shadow: var(--shadow); padding: 22px; margin-bottom: 22px;
+        }
+        .panel h3 { margin: 0 0 16px 0; font-size: 15px; font-weight: 600; }
 
-        /* Data Preview */
-        #dataPreview { background: #f5f5f7; padding: 16px; border-radius: 10px; margin-top: 16px; max-height: 120px; overflow: auto; font-size: 13px; color: #424245; font-family: monospace; }
+        /* Dropzone */
+        .dropzone {
+            border: 2px dashed var(--border-2); border-radius: var(--radius); padding: 28px;
+            text-align: center; cursor: pointer; transition: all 0.2s; background: var(--surface-2);
+        }
+        .dropzone:hover, .dropzone.drag { border-color: var(--accent); background: rgba(0,113,227,0.06); }
+        .dropzone .dz-icon { font-size: 34px; }
+        .dropzone p { margin: 10px 0 2px; font-size: 15px; font-weight: 500; }
+        .dropzone small { color: var(--text-muted); font-size: 13px; }
+        .dropzone input { display: none; }
 
-        /* Top 10 - Compact Grid Layout */
-        .top10-container { background: #fff; padding: 20px; border-radius: 16px; border: 1px solid #e8e8ed; box-shadow: 0 1px 2px rgba(0,0,0,0.04); margin-bottom: 24px; }
-        .top10-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-        .top10-header h3 { margin: 0; font-size: 15px; font-weight: 600; color: #1d1d1f; }
-        .top10-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; }
-        .top10-item { display: flex; align-items: center; padding: 10px 14px; background: #fafafa; border-radius: 10px; border: 1px solid #f0f0f0; transition: all 0.15s; }
-        .top10-item:hover { background: #f0f0f0; border-color: #e8e8ed; }
-        .top10-rank { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #e8e8ed; border-radius: 6px; font-weight: 700; font-size: 12px; color: #0071e3; margin-right: 12px; flex-shrink: 0; }
-        .top10-rank.top1 { background: #fff9e6; color: #d4a800; }
-        .top10-rank.top2 { background: #f0f0f0; color: #86868b; }
-        .top10-rank.top3 { background: #fce8e8; color: #c44c4c; }
-        .top10-info { flex: 1; min-width: 0; }
-        .top10-date { font-size: 13px; font-weight: 500; color: #1d1d1f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .top10-value { font-size: 12px; color: #86868b; margin-top: 2px; }
+        /* Controls row */
+        .row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+        .row + .row { margin-top: 14px; }
+        .field { display: flex; flex-direction: column; gap: 5px; }
+        .field label { font-size: 12px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.04em; }
+        select, input[type="date"] {
+            padding: 9px 12px; border: 1px solid var(--border-2); border-radius: var(--radius-sm);
+            font-size: 14px; background: var(--surface); color: var(--text);
+        }
+        .seg { display: inline-flex; border: 1px solid var(--border-2); border-radius: var(--radius-sm); overflow: hidden; }
+        .seg button { background: var(--surface); color: var(--text); border: none; border-radius: 0; padding: 9px 14px; font-weight: 500; }
+        .seg button.active { background: var(--accent); color: #fff; }
+        .divider { width: 1px; align-self: stretch; background: var(--border); }
 
-        /* Export Section */
-        .export-section { text-align: center; margin-top: 32px; padding: 24px; background: #fff; border-radius: 16px; border: 1px solid #e8e8ed; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
-        .export-section h3 { margin: 0 0 16px 0; font-size: 15px; font-weight: 600; color: #1d1d1f; }
-        .export-section .row { justify-content: center; }
+        /* Metric chips */
+        .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+        .chip {
+            display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--surface-2);
+            border: 1px solid var(--border); border-radius: 999px; cursor: pointer; font-size: 13px;
+            font-weight: 500; transition: all 0.15s; user-select: none;
+        }
+        .chip:hover { border-color: var(--accent); }
+        .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .chip .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--text-muted); }
+        .chip.active .dot { background: #fff; }
+        .chip .meta { font-size: 11px; opacity: 0.7; }
+        .empty-hint { color: var(--text-muted); font-size: 14px; padding: 8px 0; }
 
-        /* Dashboard Layout - Main content area */
-        .dashboard-layout { display: grid; grid-template-columns: 1fr 320px; gap: 24px; }
+        /* Stats */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 22px; }
+        .stat-card { background: var(--surface); border: 1px solid var(--border); padding: 18px; border-radius: var(--radius); box-shadow: var(--shadow); }
+        .stat-number { font-size: 1.7rem; font-weight: 700; margin-bottom: 4px; line-height: 1.15; }
+        .stat-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+        .stat-card.a .stat-number { color: var(--accent); }
+        .stat-card.b .stat-number { color: var(--red); }
+        .stat-card.c .stat-number { color: var(--green); }
+        .stat-card.d .stat-number { color: var(--orange); }
+
+        /* Layout */
+        .dashboard-layout { display: grid; grid-template-columns: 1fr 320px; gap: 22px; align-items: start; }
         .charts-section { min-width: 0; }
-        .sidebar-section { display: flex; flex-direction: column; gap: 24px; position: sticky; top: 32px; max-height: calc(100vh - 64px); overflow-y: auto; }
+        .chart-container { width: 100%; min-height: 420px; background: var(--surface); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 22px; }
+        .sidebar-section { display: flex; flex-direction: column; gap: 22px; position: sticky; top: 24px; }
 
-        @media (max-width: 1024px) {
-            .dashboard-layout { grid-template-columns: 1fr; }
-            .sidebar-section { position: static; max-height: none; }
-        }
+        /* Top 10 */
+        .top10-item { display: flex; align-items: center; padding: 9px 12px; background: var(--surface-2); border-radius: var(--radius-sm); border: 1px solid var(--border); margin-bottom: 6px; }
+        .top10-rank { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; background: var(--border); border-radius: 6px; font-weight: 700; font-size: 12px; color: var(--accent); margin-right: 11px; flex-shrink: 0; }
+        .top10-rank.r1 { background: #fff9e6; color: #d4a800; }
+        .top10-rank.r2 { background: #eef0f2; color: #86868b; }
+        .top10-rank.r3 { background: #fce8e8; color: #c44c4c; }
+        .top10-date { font-size: 13px; font-weight: 500; }
+        .top10-value { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
 
-        @media (max-width: 768px) {
-            body { padding: 16px; }
-            .row { flex-direction: column; align-items: stretch; }
-            .row label { margin-right: 0; margin-bottom: 4px; }
-            .chart-grid { grid-template-columns: 1fr; }
-            .top10-grid { grid-template-columns: 1fr; }
-        }
+        .insight { font-size: 13px; line-height: 1.6; color: var(--text-soft); }
+        .insight strong { color: var(--text); }
+        .insight .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-weight: 600; font-size: 12px; }
+        .badge.pos { background: rgba(52,199,89,0.15); color: #2a9d4a; }
+        .badge.neg { background: rgba(255,59,48,0.15); color: var(--red); }
+        .badge.neu { background: rgba(142,142,147,0.15); color: var(--text-muted); }
 
-        /* Help Section */
-        .help-toggle-btn {
-            background: #e8e8ed;
-            color: #1d1d1f;
-            padding: 8px 16px;
-            font-size: 13px;
-            margin-top: 8px;
-        }
-        .help-toggle-btn:hover {
-            background: #d2d2d7;
-        }
+        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 12px 22px; border-radius: 999px; font-size: 14px; font-weight: 500; opacity: 0; pointer-events: none; transition: opacity 0.25s; z-index: 1000; }
+        .toast.show { opacity: 1; }
 
-        .help-section {
-            background: #fff;
-            border: 1px solid #e8e8ed;
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 24px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 1px 1px rgba(0,0,0,0.03);
-            animation: slideDown 0.3s ease-out;
-        }
+        /* Help */
+        .help-section { display: none; }
+        .help-step { display: flex; gap: 16px; margin-bottom: 22px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+        .help-step:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .help-num { width: 32px; height: 32px; background: var(--accent); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+        .help-step h4 { margin: 2px 0 10px; font-size: 15px; }
+        .help-step p, .help-step li { font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+        .help-step code { background: var(--surface-2); padding: 2px 6px; border-radius: 4px; font-size: 13px; color: var(--accent); }
 
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .help-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        .help-header h3 {
-            margin: 0;
-            font-size: 18px;
-            font-weight: 600;
-            color: #1d1d1f;
-        }
-        .help-close-btn {
-            background: #ff3b30;
-            color: white;
-            padding: 6px 14px;
-            font-size: 12px;
-            border-radius: 8px;
-        }
-        .help-close-btn:hover {
-            background: #d70015;
-        }
-
-        .help-step {
-            display: flex;
-            gap: 16px;
-            margin-bottom: 28px;
-            padding-bottom: 24px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        .help-step:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
-        }
-
-        .help-step-number {
-            width: 36px;
-            height: 36px;
-            background: #0071e3;
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 15px;
-            flex-shrink: 0;
-            margin-top: 4px;
-        }
-
-        .help-step-content {
-            flex: 1;
-            min-width: 0;
-        }
-        .help-step-content h4 {
-            margin: 0 0 12px 0;
-            font-size: 15px;
-            font-weight: 600;
-            color: #1d1d1f;
-        }
-        .help-step-content h5 {
-            margin: 16px 0 8px 0;
-            font-size: 13px;
-            font-weight: 600;
-            color: #6e6e73;
-        }
-        .help-step-content p {
-            margin: 8px 0;
-            font-size: 14px;
-            line-height: 1.6;
-            color: #424245;
-        }
-        .help-step-content ol, .help-step-content ul {
-            margin: 8px 0;
-            padding-left: 20px;
-            font-size: 14px;
-            line-height: 1.7;
-            color: #424245;
-        }
-        .help-step-content li {
-            margin-bottom: 6px;
-        }
-        .help-step-content code {
-            background: #f5f5f7;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 13px;
-            color: #0071e3;
-            font-family: 'SF Mono', Monaco, monospace;
-        }
-        .help-step-content pre {
-            background: #1d1d1f;
-            color: #f5f5f7;
-            padding: 16px;
-            border-radius: 10px;
-            overflow-x: auto;
-            margin: 12px 0;
-            font-size: 12px;
-            line-height: 1.5;
-        }
-        .help-step-content pre code {
-            background: none;
-            padding: 0;
-            color: inherit;
-        }
-        .help-note {
-            background: #e8f0fe;
-            border-left: 3px solid #0071e3;
-            padding: 10px 14px;
-            border-radius: 0 8px 8px 0;
-            font-size: 13px !important;
-            color: #1d1d1f !important;
-            margin: 12px 0 !important;
-        }
-        .help-note code {
-            background: #d6e4f0;
-        }
-
-        @media (max-width: 768px) {
-            .help-step {
-                flex-direction: column;
-                gap: 10px;
-            }
-            .help-step-number {
-                width: 28px;
-                height: 28px;
-                font-size: 13px;
-            }
-        }
+        @media (max-width: 1024px) { .dashboard-layout { grid-template-columns: 1fr; } .sidebar-section { position: static; } }
+        @media (max-width: 768px) { body { padding: 16px; } }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🩺 Apple Health Dashboard</h1>
-            <p>Analisi dati avanzata</p>
-            <button class="help-toggle-btn" onclick="toggleHelp()" id="helpBtn">❓ Aiuto</button>
-        </div>
-
-        <div class="controls">
-        <div class="row">
-            <input type="file" id="csvFile" accept=".csv" multiple onchange="loadFiles()">
-            <button onclick="setDateLastYear()">📅 Ultimo Anno</button>
-            <button onclick="setDateAllTime()" class="secondary">🌍 Tutto</button>
-        </div>
-        
-        <div class="date-inputs">
-            <label>Dal:</label><input type="date" id="startDate">
-            <label>Al:</label><input type="date" id="endDate">
-            <button onclick="updateCharts()">🔄 Aggiorna</button>
-        </div>
-        
-        <div>
-            <label><strong>📊 Metriche caricate (clicca per visualizzare):</strong></label>
-            <div class="metric-grid" id="metricGrid"></div>
-        </div>
-        
-        <div class="row">
-            <label>🔗 Correlazione con: </label>
-            <select id="corrMetric2">
-                <option value="">-- Seleziona 2a metrica --</option>
-            </select>
-            <button onclick="showCorrelation()">📊 Analizza</button>
-        </div>
-        
-        <div id="dataPreview"></div>
-    </div>
-
-    <div id="helpSection" class="help-section" style="display:none;">
-        <div class="help-header">
-            <h3>📖 Guida: Come usare la Dashboard</h3>
-            <button class="help-close-btn" onclick="toggleHelp()">✕ Chiudi</button>
-        </div>
-
-        <div class="help-step">
-            <div class="help-step-number">1</div>
-            <div class="help-step-content">
-                <h4>📱 Esporta dati da iPhone</h4>
-                <ol>
-                    <li>Apri l'app <strong>Salute</strong> sul tuo iPhone</li>
-                    <li>Tocca la tua <strong>foto profilo</strong> in alto a destra</li>
-                    <li>Scorri in basso e seleziona <strong>"Esporta tutti i dati sulla salute"</strong></li>
-                    <li>Attendi la preparazione (può richiedere alcuni minuti)</li>
-                    <li>Scegli <strong>"Salva su File"</strong> e salva lo <strong>ZIP</strong> su iCloud Drive o sul dispositivo</li>
-                </ol>
-                <p class="help-note">💡 Il file ZIP contiene un file <code>export.xml</code> con tutti i tuoi dati.</p>
+            <div class="title">
+                <h1>🩺 Apple Health Dashboard</h1>
+                <p>Analisi multi-metrica dei tuoi dati sulla salute</p>
+            </div>
+            <div class="header-actions">
+                <button class="ghost" onclick="toggleTheme()" id="themeBtn" title="Tema chiaro/scuro">🌙</button>
+                <button class="ghost" onclick="toggleHelp()" id="helpBtn">❓ Aiuto</button>
             </div>
         </div>
 
-        <div class="help-step">
-            <div class="help-step-number">2</div>
-            <div class="help-step-content">
-                <h4>🔄 Converti XML in CSV</h4>
-                <p>L'XML di Apple Health non è leggibile direttamente. Devi convertirlo in file CSV (uno per metrica).</p>
-
-                <h5>Opzioni consigliate:</h5>
-                <ul>
-                    <li><strong>💻 Krumjahn AppleHealth (Python)</strong> — Il tool di riferimento per la conversione. Scaricalo da <a href="https://github.com/krumjahn/applehealth" target="_blank">github.com/krumjahn/applehealth</a>.</li>
-                </ul>
-
-                <h5>Esempio script Python:</h5>
-                <pre class="help-code"><code>import xml.etree.ElementTree as ET
-import csv
-from collections import defaultdict
-
-tree = ET.parse('export.xml')
-root = tree.getroot()
-
-records = defaultdict(list)
-for record in root.findall('.//Record'):
-    date = record.get('startDate')[:10]
-    metric = record.get('type').replace('HKQuantityTypeIdentifier', '')
-    value = float(record.get('value'))
-    records[metric].append((date, value))
-
-for metric, data in records.items():
-    with open(f'{metric}.csv', 'w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(['date', 'value'])
-        writer.writerows(sorted(data))</code></pre>
+        <!-- Upload -->
+        <div class="panel">
+            <div class="dropzone" id="dropzone" onclick="document.getElementById('csvFile').click()">
+                <div class="dz-icon">📂</div>
+                <p>Trascina qui i tuoi file CSV, oppure clicca per sceglierli</p>
+                <small>Puoi caricare più file insieme — i formati Apple Health vengono riconosciuti automaticamente</small>
+                <input type="file" id="csvFile" accept=".csv" multiple onchange="handleFileInput(event)">
             </div>
         </div>
 
-        <div class="help-step">
-            <div class="help-step-number">3</div>
-            <div class="help-step-content">
-                <h4>📊 Importa in Dashboard</h4>
-                <ol>
-                    <li>Clicca <strong>"Scegli file"</strong> (o trascina i CSV nell'area di upload)</li>
-                    <li>Seleziona <strong>più file CSV</strong> contemporaneamente (⌘/Ctrl + clic)</li>
-                    <li>Le metriche appariranno come pulsanti sotto "Metriche caricate"</li>
-                    <li>Clicca una metrica per visualizzare grafici, statistiche e Top 10</li>
-                    <li>Usa i filtri data ("Ultimo Anno", "Tutto", o date personalizzate)</li>
-                </ol>
-                <p class="help-note">💡 La dashboard supporta: Passi, Frequenza cardiaca, Allenamenti, Peso, Calorie, Distanza, Sonno, VO2 Max, HRV, Ossigeno, Pressione, Glicemia, Temperatura.</p>
+        <!-- Help -->
+        <div id="helpSection" class="panel help-section">
+            <div class="help-step">
+                <div class="help-num">1</div>
+                <div>
+                    <h4>📱 Esporta i dati da iPhone</h4>
+                    <p>App <strong>Salute</strong> → foto profilo in alto a destra → <strong>Esporta tutti i dati sulla salute</strong> → salva lo ZIP (contiene <code>export.xml</code>).</p>
+                </div>
             </div>
-        </div>
-
-        <div class="help-step">
-            <div class="help-step-number">4</div>
-            <div class="help-step-content">
-                <h4>🔍 Funzionalità avanzate</h4>
-                <ul>
-                    <li><strong>Correlazione:</strong> Seleziona due metriche e clicca "Analizza" per vedere correlazione di Pearson</li>
-                    <li><strong>Top 10 Giorni:</strong> Nella sidebar, vedi i giorni con valori massimi per la metrica attiva</li>
-                    <li><strong>Esportazione:</strong> Scarica grafici come PNG o tutti i dati come CSV</li>
-                    <li><strong>Media mobile 7gg:</strong> Nel grafico distribuzione, linea arancione = trend settimanale</li>
-                </ul>
+            <div class="help-step">
+                <div class="help-num">2</div>
+                <div>
+                    <h4>🔄 Converti XML in CSV</h4>
+                    <p>Usa un convertitore come <a href="https://github.com/krumjahn/applehealth" target="_blank">krumjahn/applehealth</a> per generare un CSV per ogni metrica (passi, frequenza cardiaca, peso, sonno, allenamenti, ecc.).</p>
+                </div>
             </div>
-        </div>
-    </div>
-
-    <div class="dashboard-layout">
-        <div class="main-content">
-            <div class="stats-grid" id="statsContainer"></div>
-            <div id="chart1" class="chart-container"></div>
-            <div id="chart2" class="chart-container"></div>
-            <div id="chart3" class="chart-container" style="display:none;"></div>
-            <div class="export-section">
-                <h3>💾 Esportazioni</h3>
-                <div class="row" style="justify-content: center;">
-                    <button onclick="exportPNG('chart1', 'trend')" class="export">📈 Scarica Grafico 1</button>
-                    <button onclick="exportPNG('chart2', 'stats')" class="export">📊 Scarica Grafico 2</button>
-                    <button onclick="exportAllCSV()" class="secondary">📄 Scarica Tutti CSV</button>
+            <div class="help-step">
+                <div class="help-num">3</div>
+                <div>
+                    <h4>📊 Carica e analizza</h4>
+                    <p>Trascina i CSV nell'area di caricamento. Seleziona una o più metriche per confrontarle sullo stesso grafico, scegli l'intervallo di date e la granularità (giorno/settimana/mese).</p>
+                    <p>Formati riconosciuti: serie <code>date,value</code> (passi, bpm, peso, distanza), <code>workouts</code>, <code>sleep_data</code>, <code>activity_summary</code>.</p>
+                </div>
+            </div>
+            <div class="help-step">
+                <div class="help-num">4</div>
+                <div>
+                    <h4>🔍 Funzioni avanzate</h4>
+                    <p>Correlazione di Pearson tra due metriche con retta di regressione, Top 10 giorni, trend con media mobile, confronto con periodo precedente ed esportazione PNG/CSV.</p>
                 </div>
             </div>
         </div>
-        <aside class="sidebar-section">
-            <div id="top10Container" class="top10-container" style="display:none;">
-                <div class="top10-header"><h3>🏆 Top 10 Giorni</h3></div>
-                <div id="top10List" class="top10-grid"></div>
-            </div>
-        </aside>
-    </div>
-    </div> <!-- Fine container -->
 
-    <script>
-        // Aggiunta per responsive Plotly
-        window.onresize = function() {
-            ['chart1', 'chart2', 'chart3'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el && el.offsetWidth > 0 && el.offsetHeight > 0) {
-                    Plotly.Plots.resize(el);
-                }
-            });
-        };
-
-        let csvData = {};
-        let currentMetric = null;
-
-        function parseISODate(str) {
-            if (!str) return null;
-            const isoMatch = str.match(/(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})/);
-            if (isoMatch) return new Date(`${isoMatch[1]}T${isoMatch[2]}`);
-            return new Date(str);
-        }
-
-        function parseCSV(text, filename) {
-            const rows = text.split('\n').map(row => row.split(',').map(cell => cell.trim()));
-            const headers = rows[0];
-            
-            if (filename.includes('workouts')) {
-                return rows.slice(1).map(row => {
-                    const startDate = parseISODate(row[5]);
-                    const duration = parseFloat(row[7]) || 0;
-                    const workoutType = row[6] || 'Unknown';
-                    return { date: startDate, value: duration, type: workoutType };
-                }).filter(d => d.date && !isNaN(d.value));
-            }
-            
-            return rows.slice(1).map(row => {
-                const date = parseISODate(row[0]);
-                let value = NaN;
-                for (let i = 1; i < row.length; i++) {
-                    value = parseFloat(row[i]);
-                    if (!isNaN(value)) break;
-                }
-                return { date, value };
-            }).filter(d => d.date && !isNaN(d.value));
-        }
-
-        function loadFiles() {
-            const files = document.getElementById('csvFile').files;
-            const grid = document.getElementById('metricGrid');
-            const corrSelect = document.getElementById('corrMetric2');
-            grid.innerHTML = '';
-            corrSelect.innerHTML = '<option value="">-- Seleziona --</option>';
-            
-            Array.from(files).forEach(file => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const data = parseCSV(e.target.result, file.name);
-                    if (data.length > 0) {
-                        csvData[file.name] = { 
-                            name: file.name.replace('.csv', ''), 
-                            data,
-                            filename: file.name 
-                        };
-                        
-                        const btn = document.createElement('div');
-                        btn.className = 'metric-item';
-                        btn.textContent = file.name;
-                        btn.onclick = () => selectMetric(file.name);
-                        grid.appendChild(btn);
-                        
-                        const opt = new Option(file.name, file.name);
-                        corrSelect.appendChild(opt);
-                    }
-                };
-                reader.readAsText(file);
-            });
-            
-            setDateLastYear();
-        }
-
-        function selectMetric(filename) {
-            document.querySelectorAll('.metric-item').forEach(el => el.classList.remove('active'));
-            event.target.classList.add('active');
-            currentMetric = csvData[filename];
-            document.getElementById('chart3').style.display = 'none';
-            updateCharts();
-        }
-
-        function setDateLastYear() {
-            const today = new Date();
-            const oneYear = new Date();
-            oneYear.setFullYear(today.getFullYear() - 1);
-            document.getElementById('startDate').value = oneYear.toISOString().split('T')[0];
-            document.getElementById('endDate').value = today.toISOString().split('T')[0];
-        }
-
-        function setDateAllTime() {
-    if (Object.keys(csvData).length === 0) {
-        alert('⚠️ Carica prima dei CSV!');
-        return;
-    }
-    
-    // DEVI INIZIALIZZARE allDates PRIMA del forEach!
-    const allDates = [];
-    
-    Object.values(csvData).forEach(m => {
-        m.data.forEach(d => {
-            if (d.date && d.date instanceof Date && !isNaN(d.date.getTime())) {
-                allDates.push(d.date.getTime());
-            }
-        });
-    });
-    
-    // Controllo date valide
-    if (allDates.length === 0) {
-        alert('⚠️ Nessun dato con date valide!');
-        console.error('csvData:', csvData);
-        return;
-    }
-    
-    console.log('📊 Trovate', allDates.length, 'date valide');
-    
-    const min = new Date(Math.min(...allDates));
-    const max = new Date(Math.max(...allDates));
-    
-    console.log('📅 Range:', min.toLocaleDateString('it-IT'), '→', max.toLocaleDateString('it-IT'));
-    
-    document.getElementById('startDate').value = min.toISOString().split('T')[0];
-    document.getElementById('endDate').value = max.toISOString().split('T')[0];
-    
-    if (currentMetric) {
-        updateCharts();
-    }
-}
-
-
-        function updateCharts() {
-            if (!currentMetric) return;
-            
-            const startDate = new Date(document.getElementById('startDate').value + 'T00:00:00');
-            const endDate = new Date(document.getElementById('endDate').value + 'T23:59:59');
-            
-            let filtered = currentMetric.data.filter(d => d.date >= startDate && d.date <= endDate);
-            filtered.sort((a,b) => a.date - b.date);
-            
-            if (filtered.length === 0) {
-                alert('Nessun dato nel range selezionato');
-                return;
-            }
-            
-            updateStats(filtered);
-            updateTop10(filtered);
-
-            // Grafico 1: Trend
-            const trace1 = {
-                x: filtered.map(d => d.date),
-                y: filtered.map(d => d.value),
-                type: 'scatter',
-                mode: 'lines+markers',
-                name: currentMetric.name,
-                line: {color: '#007aff', width: 3},
-                marker: {size: 6}
-            };
-            
-            Plotly.newPlot('chart1', [trace1], {
-                title: `📈 ${currentMetric.name} (${filtered.length} punti)`,
-                xaxis: {title: 'Data'},
-                yaxis: {title: currentMetric.name}
-            });
-            
-            // Grafico 2: Distribuzione giornaliera + media mobile
-            const dailyData = aggregateByDay(filtered);
-            const movingAvg = calculateMovingAvg(dailyData, 7);
-            
-            const trace2 = {
-                x: dailyData.map(d => d.date),
-                y: dailyData.map(d => d.value),
-                type: 'bar',
-                name: 'Giornaliero',
-                marker: {color: 'rgba(0,122,255,0.6)'}
-            };
-            
-            const trace3 = {
-                x: movingAvg.map(d => d.date),
-                y: movingAvg.map(d => d.value),
-                type: 'scatter',
-                mode: 'lines',
-                name: 'Media 7gg',
-                line: {color: '#ff9500', width: 4}
-            };
-            
-            Plotly.newPlot('chart2', [trace2, trace3], {
-                title: `📊 Distribuzione giornaliera + Trend`,
-                xaxis: {title: 'Data'},
-                yaxis: {title: currentMetric.name}
-            });
-            
-            showPreview(filtered.slice(0, 10));
-        }
-
-        function aggregateByDay(data) {
-            const daily = {};
-            data.forEach(d => {
-                const key = d.date.toISOString().split('T')[0];
-                daily[key] = (daily[key] || 0) + d.value;
-            });
-            return Object.entries(daily).map(([date, value]) => ({
-                date: new Date(date),
-                value
-            })).sort((a,b) => a.date - b.date);
-        }
-
-        function calculateMovingAvg(data, window) {
-            if (data.length < window) return [];
-            const result = [];
-            for (let i = window - 1; i < data.length; i++) {
-                const slice = data.slice(i - window + 1, i + 1);
-                const avg = slice.reduce((sum, d) => sum + d.value, 0) / window;
-                result.push({ date: data[i].date, value: avg });
-            }
-            return result;
-        }
-
-        function showCorrelation() {
-            const metric2Name = document.getElementById('corrMetric2').value;
-            if (!currentMetric || !metric2Name || !csvData[metric2Name]) {
-                alert('Seleziona prima una metrica principale e una per correlazione');
-                return;
-            }
-            
-            const metric2 = csvData[metric2Name];
-            const startDate = new Date(document.getElementById('startDate').value);
-            const endDate = new Date(document.getElementById('endDate').value);
-            
-            // Allinea le date
-            const aligned = alignDatasets(currentMetric.data, metric2.data, startDate, endDate);
-            
-            if (aligned.length < 3) {
-                alert('Troppo pochi dati sovrapposti per correlazione');
-                return;
-            }
-            
-            const correlation = calculateCorrelation(aligned.map(d => d.value1), aligned.map(d => d.value2));
-            
-            // Grafico scatter
-            const trace = {
-                x: aligned.map(d => d.value1),
-                y: aligned.map(d => d.value2),
-                mode: 'markers',
-                type: 'scatter',
-                name: 'Correlazione',
-                marker: {size: 10, color: '#34c759'}
-            };
-            
-            document.getElementById('chart3').style.display = 'block';
-            Plotly.newPlot('chart3', [trace], {
-                title: `🔗 Correlazione: ${currentMetric.name} vs ${metric2.name} (r=${correlation.toFixed(3)})`,
-                xaxis: {title: currentMetric.name},
-                yaxis: {title: metric2.name}
-            });
-            
-            document.getElementById('dataPreview').innerHTML = `
-                <strong>📊 Analisi Correlazione:</strong><br>
-                Coefficiente Pearson: <strong>${correlation.toFixed(3)}</strong><br>
-                Interpretazione: ${interpretCorrelation(correlation)}<br>
-                Punti analizzati: ${aligned.length}
-            `;
-        }
-
-        function alignDatasets(data1, data2, startDate, endDate) {
-            const map1 = {};
-            data1.forEach(d => {
-                if (d.date >= startDate && d.date <= endDate) {
-                    const key = d.date.toISOString().split('T')[0];
-                    map1[key] = (map1[key] || 0) + d.value;
-                }
-            });
-            
-            const map2 = {};
-            data2.forEach(d => {
-                if (d.date >= startDate && d.date <= endDate) {
-                    const key = d.date.toISOString().split('T')[0];
-                    map2[key] = (map2[key] || 0) + d.value;
-                }
-            });
-            
-            const aligned = [];
-            Object.keys(map1).forEach(date => {
-                if (map2[date]) {
-                    aligned.push({ date, value1: map1[date], value2: map2[date] });
-                }
-            });
-            return aligned;
-        }
-
-        function calculateCorrelation(x, y) {
-            const n = x.length;
-            const sumX = x.reduce((a,b) => a+b, 0);
-            const sumY = y.reduce((a,b) => a+b, 0);
-            const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
-            const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
-            const sumY2 = y.reduce((sum, yi) => sum + yi * yi, 0);
-            
-            const numerator = n * sumXY - sumX * sumY;
-            const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
-            
-            return denominator === 0 ? 0 : numerator / denominator;
-        }
-
-        function interpretCorrelation(r) {
-            const abs = Math.abs(r);
-            if (abs > 0.7) return '🟢 Forte correlazione';
-            if (abs > 0.4) return '🟡 Correlazione moderata';
-            if (abs > 0.2) return '🟠 Correlazione debole';
-            return '⚪ Nessuna correlazione significativa';
-        }
-
-
-        // Sistema di riconoscimento metrica e unità
-function detectMetricType(filename, metricName) {
-    const name = (filename + metricName).toLowerCase();
-    
-    if (name.includes('step')) return 'steps';
-    if (name.includes('heart') || name.includes('bpm')) return 'heart_rate';
-    if (name.includes('workout')) return 'workout';
-    if (name.includes('weight') || name.includes('body_mass') || name.includes('peso')) return 'weight';
-    if (name.includes('calor')) return 'calories';
-    if (name.includes('distance') || name.includes('distanza')) return 'distance';
-    if (name.includes('sleep') || name.includes('sonno')) return 'sleep';
-    if (name.includes('vo2')) return 'vo2max';
-    if (name.includes('hrv')) return 'hrv';
-    if (name.includes('oxygen') || name.includes('spo2')) return 'oxygen';
-    if (name.includes('blood_pressure') || name.includes('pressione')) return 'blood_pressure';
-    if (name.includes('glucose') || name.includes('glicemia')) return 'glucose';
-    if (name.includes('temperature') || name.includes('temperatura')) return 'temperature';
-    
-    return 'generic';
-}
-
-function formatValueWithUnit(value, metricType, isTotal = false) {
-    switch(metricType) {
-        case 'steps':
-            return value.toLocaleString('it-IT', {maximumFractionDigits: 0}) + ' passi';
-        
-        case 'heart_rate':
-            return value.toFixed(0) + ' bpm';
-        
-        case 'workout':
-            if (isTotal && value > 60) {
-                const hours = (value / 60).toFixed(1);
-                return hours + ' ore';
-            }
-            return value.toFixed(0) + ' min';
-        
-        case 'weight':
-            return value.toFixed(1) + ' kg';
-        
-        case 'calories':
-            return value.toFixed(0) + ' kcal';
-        
-        case 'distance':
-            if (value > 1000) {
-                return (value / 1000).toFixed(2) + ' km';
-            }
-            return value.toFixed(0) + ' m';
-        
-        case 'sleep':
-            const hours = Math.floor(value / 60);
-            const mins = Math.round(value % 60);
-            return `${hours}h ${mins}min`;
-        
-        case 'vo2max':
-            return value.toFixed(1) + ' mL/(kg·min)';
-        
-        case 'hrv':
-            return value.toFixed(0) + ' ms';
-        
-        case 'oxygen':
-            return value.toFixed(1) + ' %';
-        
-        case 'blood_pressure':
-            return value.toFixed(0) + ' mmHg';
-        
-        case 'glucose':
-            return value.toFixed(0) + ' mg/dL';
-        
-        case 'temperature':
-            return value.toFixed(1) + ' °C';
-        
-        default:
-            return value.toFixed(1);
-    }
-}
-
-
-        function updateStats(data) {
-    // Identifica tipo metrica
-    const metricType = detectMetricType(currentMetric.filename, currentMetric.name);
-    
-    const avg = data.reduce((a,b) => a + b.value, 0) / data.length;
-    const max = Math.max(...data.map(d => d.value));
-    const min = Math.min(...data.map(d => d.value));
-    const total = data.reduce((a,b) => a + b.value, 0);
-    
-    // Formatta con unità appropriate
-    const avgFormatted = formatValueWithUnit(avg, metricType);
-    const maxFormatted = formatValueWithUnit(max, metricType);
-    const minFormatted = formatValueWithUnit(min, metricType);
-    const totalFormatted = formatValueWithUnit(total, metricType, true);
-    
-    document.getElementById('statsContainer').innerHTML = `
-        <div class="stat-card">
-            <div class="stat-number">${avgFormatted}</div>
-            <div>Media</div>
-        </div>
-        <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-            <div class="stat-number">${maxFormatted}</div>
-            <div>Massimo</div>
-        </div>
-        <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-            <div class="stat-number">${minFormatted}</div>
-            <div>Minimo</div>
-        </div>
-        <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
-            <div class="stat-number">${totalFormatted}</div>
-            <div>Totale</div>
-        </div>
-    `;
-}
-
-
-        function updateTop10(data) {
-            const container = document.getElementById('top10Container');
-            const list = document.getElementById('top10List');
-            const metricType = detectMetricType(currentMetric.filename, currentMetric.name);
-
-            const sorted = [...data].sort((a,b) => b.value - a.value).slice(0, 10);
-
-            list.innerHTML = sorted.map((d, i) => `
-                <div class="top10-item">
-                    <div class="top10-rank top${i+1}">${i + 1}</div>
-                    <div class="top10-info">
-                        <div class="top10-date">${d.date.toLocaleDateString('it-IT')}</div>
-                        <div class="top10-value">${formatValueWithUnit(d.value, metricType)}</div>
+        <!-- Controls -->
+        <div class="panel" id="controlsPanel" style="display:none;">
+            <div class="row">
+                <div class="field">
+                    <label>Dal</label>
+                    <input type="date" id="startDate" onchange="render()">
+                </div>
+                <div class="field">
+                    <label>Al</label>
+                    <input type="date" id="endDate" onchange="render()">
+                </div>
+                <div class="field">
+                    <label>Periodo rapido</label>
+                    <div class="seg" id="quickRange">
+                        <button data-range="30">30g</button>
+                        <button data-range="90">90g</button>
+                        <button data-range="365" class="active">1 anno</button>
+                        <button data-range="all">Tutto</button>
                     </div>
                 </div>
-            `).join('');
+                <div class="divider"></div>
+                <div class="field">
+                    <label>Granularità</label>
+                    <div class="seg" id="granularity">
+                        <button data-g="day" class="active">Giorno</button>
+                        <button data-g="week">Settimana</button>
+                        <button data-g="month">Mese</button>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Aggregazione</label>
+                    <select id="aggMode" onchange="render()">
+                        <option value="auto">Automatica</option>
+                        <option value="sum">Somma</option>
+                        <option value="avg">Media</option>
+                    </select>
+                </div>
+            </div>
 
-            container.style.display = 'block';
+            <div class="row" style="margin-top:18px;">
+                <div style="flex:1; min-width:0;">
+                    <label class="field" style="margin-bottom:6px;"><span style="font-size:12px; font-weight:600; color:var(--text-soft); text-transform:uppercase; letter-spacing:0.04em;">Metriche (clicca per attivare/confrontare)</span></label>
+                    <div class="chips" id="metricChips"><span class="empty-hint">Carica dei CSV per iniziare…</span></div>
+                </div>
+            </div>
+
+            <div class="row" style="margin-top:18px; align-items:flex-end;">
+                <div class="field">
+                    <label>Tipo allenamento</label>
+                    <select id="workoutFilter" onchange="render()" disabled>
+                        <option value="">Tutti</option>
+                    </select>
+                </div>
+                <div class="divider"></div>
+                <div class="field">
+                    <label>Correlazione: metrica A</label>
+                    <select id="corrA"></select>
+                </div>
+                <div class="field">
+                    <label>Metrica B</label>
+                    <select id="corrB"></select>
+                </div>
+                <button onclick="showCorrelation()">📊 Analizza correlazione</button>
+            </div>
+        </div>
+
+        <!-- Dashboard -->
+        <div class="dashboard-layout" id="dashboard" style="display:none;">
+            <div class="charts-section">
+                <div class="stats-grid" id="statsContainer"></div>
+                <div id="chart1" class="chart-container"></div>
+                <div id="chart2" class="chart-container"></div>
+                <div id="chart3" class="chart-container" style="display:none;"></div>
+                <div class="panel" style="text-align:center;">
+                    <h3>💾 Esportazioni</h3>
+                    <div class="row" style="justify-content:center;">
+                        <button class="orange" onclick="exportPNG('chart1','trend')">📈 Grafico trend</button>
+                        <button class="orange" onclick="exportPNG('chart2','distribuzione')">📊 Grafico distribuzione</button>
+                        <button class="green" onclick="exportActiveCSV()">📄 CSV metriche attive</button>
+                    </div>
+                </div>
+            </div>
+            <aside class="sidebar-section">
+                <div class="panel" id="insightPanel" style="display:none;">
+                    <h3>💡 Sintesi</h3>
+                    <div class="insight" id="insightBody"></div>
+                </div>
+                <div class="panel" id="top10Panel" style="display:none;">
+                    <h3>🏆 Top 10 giorni</h3>
+                    <div id="top10List"></div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+    /* ====================== STATE ====================== */
+    const PALETTE = ['#0071e3', '#ff9500', '#34c759', '#ff3b30', '#af52de', '#5ac8fa', '#ff2d55', '#ffcc00'];
+    let metrics = {};          // id -> { id, label, unit, type, agg, data:[{date,value}], workoutTypes?, color }
+    let activeIds = [];        // selected metric ids
+    let granularity = 'day';
+    let quickRange = '365';
+
+    /* ====================== CSV PARSING ====================== */
+    // Robust CSV line splitter that respects double quotes
+    function splitCSVLine(line) {
+        const out = []; let cur = ''; let inQ = false;
+        for (let i = 0; i < line.length; i++) {
+            const c = line[i];
+            if (c === '"') {
+                if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+                else inQ = !inQ;
+            } else if (c === ',' && !inQ) { out.push(cur); cur = ''; }
+            else cur += c;
         }
+        out.push(cur);
+        return out.map(s => s.trim());
+    }
 
-        function exportPNG(chartId, name) {
-            Plotly.downloadImage(chartId, {
-                format: 'png',
-                width: 1920,
-                height: 1080,
-                filename: `apple_health_${name}_${new Date().toISOString().split('T')[0]}`
+    function parseDate(str) {
+        if (!str) return null;
+        // yyyy-MM-dd HH:mm:ss +ZZZZ  (workouts)
+        let m = str.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})/);
+        if (m) return new Date(`${m[1]}T${m[2]}`);
+        // yyyy-MM-dd
+        m = str.match(/^(\d{4}-\d{2}-\d{2})$/);
+        if (m) return new Date(`${m[1]}T00:00:00`);
+        const d = new Date(str);
+        return isNaN(d.getTime()) ? null : d;
+    }
+
+    // Returns array of metric definitions produced from a single file
+    function parseFile(name, text) {
+        const lines = text.split(/\r?\n/).filter(l => l.trim().length);
+        if (!lines.length) return [];
+        const headers = splitCSVLine(lines[0]).map(h => h.toLowerCase());
+        const rows = lines.slice(1).map(splitCSVLine);
+        const base = name.replace(/\.csv$/i, '');
+
+        // --- WORKOUTS ---
+        if (headers.includes('workoutactivitytype') && headers.includes('duration')) {
+            const iStart = headers.indexOf('startdate');
+            const iDur = headers.indexOf('duration');
+            const iType = headers.indexOf('workoutactivitytype');
+            const data = [];
+            rows.forEach(r => {
+                const date = parseDate(r[iStart]);
+                const value = parseFloat(r[iDur]);
+                if (date && !isNaN(value)) {
+                    const wt = (r[iType] || 'Unknown').replace('HKWorkoutActivityType', '');
+                    data.push({ date, value, workoutType: wt });
+                }
             });
+            const types = [...new Set(data.map(d => d.workoutType))].sort();
+            return [{ id: base, label: 'Allenamenti (durata)', unit: 'min', type: 'workout', agg: 'sum', data, workoutTypes: types }];
         }
 
-        function exportAllCSV() {
-            if (Object.keys(csvData).length === 0) return;
-            
-            const zip = [];
-            Object.values(csvData).forEach(metric => {
-                let csv = 'date,value\n';
-                metric.data.forEach(d => {
-                    csv += `${d.date.toISOString()},${d.value}\n`;
+        // --- SLEEP ---
+        if (headers.includes('duration_minutes') && headers.includes('sleep_type')) {
+            const iDate = headers.indexOf('date');
+            const iDur = headers.indexOf('duration_minutes');
+            const iType = headers.indexOf('sleep_type');
+            // Prefer "Asleep" rows; fall back to all if none
+            const asleep = [], all = [];
+            rows.forEach(r => {
+                const date = parseDate(r[iDate]);
+                const value = parseFloat(r[iDur]);
+                if (!date || isNaN(value)) return;
+                all.push({ date, value });
+                if ((r[iType] || '').toLowerCase().includes('asleep')) asleep.push({ date, value });
+            });
+            const data = asleep.length ? asleep : all;
+            return [{ id: base, label: 'Sonno', unit: 'min', type: 'sleep', agg: 'sum', data }];
+        }
+
+        // --- ACTIVITY SUMMARY (multi numeric column) ---
+        if (headers.includes('datecomponents') || headers.filter(h => isNumericColumn(rows, headers.indexOf(h))).length > 1) {
+            const iDate = headers.indexOf('datecomponents') >= 0 ? headers.indexOf('datecomponents') : 0;
+            const defs = [];
+            headers.forEach((h, idx) => {
+                if (idx === iDate) return;
+                if (!isNumericColumn(rows, idx)) return;
+                const data = [];
+                rows.forEach(r => {
+                    const date = parseDate(r[iDate]);
+                    const value = parseFloat(r[idx]);
+                    if (date && !isNaN(value) && date.getFullYear() > 2000) data.push({ date, value });
                 });
-                
-                const blob = new Blob([csv], {type: 'text/csv'});
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `${metric.name}_export.csv`;
-                a.click();
+                if (data.length) {
+                    const info = classify(base + ' ' + h);
+                    defs.push({ id: `${base}:${h}`, label: prettyCol(h), unit: info.unit, type: info.type, agg: info.agg, data });
+                }
             });
+            if (defs.length > 1) return defs;
+            // if only one numeric column fall through to simple handling
         }
 
-        function toggleHelp() {
-            const section = document.getElementById('helpSection');
-            const btn = document.getElementById('helpBtn');
+        // --- SIMPLE date,value ---
+        const iDate = headers.indexOf('date') >= 0 ? headers.indexOf('date') : 0;
+        let iVal = headers.indexOf('value');
+        if (iVal < 0) iVal = headers.findIndex((h, idx) => idx !== iDate && isNumericColumn(rows, idx));
+        if (iVal < 0) iVal = 1;
+        const data = [];
+        rows.forEach(r => {
+            const date = parseDate(r[iDate]);
+            const value = parseFloat(r[iVal]);
+            if (date && !isNaN(value)) data.push({ date, value });
+        });
+        const info = classify(base);
+        return data.length ? [{ id: base, label: info.label || prettyCol(base), unit: info.unit, type: info.type, agg: info.agg, data }] : [];
+    }
 
-            if (section.style.display === 'none') {
-                section.style.display = 'block';
-                btn.textContent = '✕ Chiudi aiuto';
-                btn.style.background = '#ff3b30';
-            } else {
-                section.style.display = 'none';
-                btn.textContent = '❓ Aiuto';
-                btn.style.background = '#e8e8ed';
-            }
+    function isNumericColumn(rows, idx) {
+        if (idx < 0) return false;
+        let num = 0, tot = 0;
+        for (let i = 0; i < Math.min(rows.length, 20); i++) {
+            const v = rows[i][idx];
+            if (v === undefined || v === '') continue;
+            tot++;
+            if (!isNaN(parseFloat(v)) && /^[\d.\-+eE]+$/.test(v)) num++;
         }
+        return tot > 0 && num / tot > 0.7;
+    }
 
-        window.onload = setDateLastYear;
+    function prettyCol(s) {
+        return s.replace(/[_:]/g, ' ')
+                .replace(/([a-z])([A-Z])/g, '$1 $2')
+                .replace(/\bdata\b/i, '')
+                .replace(/\s+/g, ' ').trim()
+                .replace(/^\w/, c => c.toUpperCase());
+    }
+
+    // Classify metric -> {type, unit, agg, label}
+    function classify(name) {
+        const n = name.toLowerCase();
+        const map = [
+            ['steps|passi|step',            { type:'steps',    unit:'passi', agg:'sum', label:'Passi' }],
+            ['heart|bpm|cardiac|cuore',     { type:'hr',       unit:'bpm',   agg:'avg', label:'Frequenza cardiaca' }],
+            ['weight|body.?mass|peso',      { type:'weight',   unit:'kg',    agg:'avg', label:'Peso' }],
+            ['distance|distanza',           { type:'distance', unit:'km',    agg:'sum', label:'Distanza' }],
+            ['activeenergy|active.?energy|calor|energy', { type:'calories', unit:'kcal', agg:'sum', label:'Energia attiva' }],
+            ['exercisetime|exercise',       { type:'minutes',  unit:'min',   agg:'sum', label:'Minuti di esercizio' }],
+            ['standhours|stand',            { type:'hours',    unit:'h',     agg:'sum', label:'Ore in piedi' }],
+            ['movetime|move',               { type:'minutes',  unit:'min',   agg:'sum', label:'Move' }],
+            ['vo2',                         { type:'vo2',      unit:'mL/kg·min', agg:'avg', label:'VO₂max' }],
+            ['hrv',                         { type:'hrv',      unit:'ms',    agg:'avg', label:'HRV' }],
+            ['oxygen|spo2|ossigeno',        { type:'oxygen',   unit:'%',     agg:'avg', label:'Ossigeno' }],
+            ['glucose|glicemia',            { type:'glucose',  unit:'mg/dL', agg:'avg', label:'Glicemia' }],
+            ['temperature|temperatura',     { type:'temp',     unit:'°C',    agg:'avg', label:'Temperatura' }],
+        ];
+        for (const [re, info] of map) if (new RegExp(re).test(n)) return info;
+        return { type:'generic', unit:'', agg:'avg', label:'' };
+    }
+
+    /* ====================== FORMATTING ====================== */
+    function fmtNum(v, dec = 0) {
+        return v.toLocaleString('it-IT', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    }
+    function convertDisplay(type, v) {
+        if (type === 'distance' && v > 100) return v / 1000; // m -> km when values look metric
+        return v;
+    }
+    function fmtValue(m, v) {
+        const t = m.type;
+        if (t === 'steps')   return fmtNum(v) + ' passi';
+        if (t === 'hr')      return fmtNum(v) + ' bpm';
+        if (t === 'weight')  return fmtNum(v,1) + ' kg';
+        if (t === 'calories')return fmtNum(v) + ' kcal';
+        if (t === 'minutes' || t === 'workout') return fmtNum(v) + ' min';
+        if (t === 'hours')   return fmtNum(v) + ' h';
+        if (t === 'distance'){ const km = v > 100 ? v/1000 : v; return fmtNum(km,2) + ' km'; }
+        if (t === 'sleep')   { const h = Math.floor(v/60), mm = Math.round(v%60); return `${h}h ${mm}min`; }
+        if (t === 'vo2')     return fmtNum(v,1) + ' mL/kg·min';
+        if (t === 'hrv')     return fmtNum(v) + ' ms';
+        if (t === 'oxygen')  return fmtNum(v,1) + ' %';
+        if (t === 'glucose') return fmtNum(v) + ' mg/dL';
+        if (t === 'temp')    return fmtNum(v,1) + ' °C';
+        return fmtNum(v, Number.isInteger(v) ? 0 : 1) + (m.unit ? ' ' + m.unit : '');
+    }
+
+    /* ====================== FILE HANDLING ====================== */
+    function handleFileInput(e) { ingestFiles(e.target.files); }
+
+    function ingestFiles(fileList) {
+        const files = Array.from(fileList).filter(f => f.name.toLowerCase().endsWith('.csv'));
+        if (!files.length) { toast('Nessun CSV valido'); return; }
+        let pending = files.length, added = 0;
+        files.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = ev => {
+                try {
+                    const defs = parseFile(file.name, ev.target.result);
+                    defs.forEach(d => {
+                        d.data.sort((a,b) => a.date - b.date);
+                        d.color = PALETTE[Object.keys(metrics).length % PALETTE.length];
+                        metrics[d.id] = d;
+                        added++;
+                    });
+                } catch (err) { console.error('Parse error', file.name, err); }
+                if (--pending === 0) finishIngest(added);
+            };
+            reader.readAsText(file);
+        });
+    }
+
+    function finishIngest(added) {
+        toast(added ? `${added} metriche caricate` : 'Nessun dato riconosciuto');
+        document.getElementById('controlsPanel').style.display = 'block';
+        document.getElementById('dashboard').style.display = 'grid';
+        buildChips();
+        buildCorrSelects();
+        if (!activeIds.length) {
+            const first = Object.keys(metrics)[0];
+            if (first) activeIds = [first];
+        }
+        applyQuickRange(quickRange, false);
+        render();
+    }
+
+    /* ====================== UI BUILDERS ====================== */
+    function buildChips() {
+        const box = document.getElementById('metricChips');
+        const ids = Object.keys(metrics);
+        if (!ids.length) { box.innerHTML = '<span class="empty-hint">Carica dei CSV per iniziare…</span>'; return; }
+        box.innerHTML = ids.map(id => {
+            const m = metrics[id];
+            const on = activeIds.includes(id);
+            return `<span class="chip ${on?'active':''}" style="${on?`background:${m.color};border-color:${m.color}`:''}" onclick="toggleMetric('${id}')">
+                        <span class="dot"></span>${m.label}
+                        <span class="meta">${m.data.length} pt</span>
+                    </span>`;
+        }).join('');
+    }
+
+    function buildCorrSelects() {
+        const ids = Object.keys(metrics);
+        const opts = ids.map(id => `<option value="${id}">${metrics[id].label}</option>`).join('');
+        const a = document.getElementById('corrA'), b = document.getElementById('corrB');
+        a.innerHTML = opts; b.innerHTML = opts;
+        if (ids.length > 1) b.selectedIndex = 1;
+    }
+
+    function toggleMetric(id) {
+        const i = activeIds.indexOf(id);
+        if (i >= 0) { if (activeIds.length > 1) activeIds.splice(i,1); }
+        else activeIds.push(id);
+        buildChips();
+        updateWorkoutFilter();
+        render();
+    }
+
+    function updateWorkoutFilter() {
+        const sel = document.getElementById('workoutFilter');
+        const wm = activeIds.map(id => metrics[id]).find(m => m.type === 'workout');
+        if (wm) {
+            sel.disabled = false;
+            sel.innerHTML = '<option value="">Tutti i tipi</option>' + wm.workoutTypes.map(t => `<option value="${t}">${t}</option>`).join('');
+        } else { sel.disabled = true; sel.innerHTML = '<option value="">Tutti</option>'; }
+    }
+
+    /* ====================== DATE RANGE ====================== */
+    function allDatesRange() {
+        let min = Infinity, max = -Infinity;
+        Object.values(metrics).forEach(m => m.data.forEach(d => {
+            const t = d.date.getTime(); if (t < min) min = t; if (t > max) max = t;
+        }));
+        return isFinite(min) ? [new Date(min), new Date(max)] : [new Date(), new Date()];
+    }
+    function applyQuickRange(range, doRender = true) {
+        const [min, max] = allDatesRange();
+        const end = max;
+        let start;
+        if (range === 'all') start = min;
+        else { start = new Date(end); start.setDate(end.getDate() - parseInt(range)); if (start < min) start = min; }
+        document.getElementById('startDate').value = start.toISOString().split('T')[0];
+        document.getElementById('endDate').value = end.toISOString().split('T')[0];
+        if (doRender) render();
+    }
+    function getRange() {
+        const s = document.getElementById('startDate').value;
+        const e = document.getElementById('endDate').value;
+        return [new Date(s + 'T00:00:00'), new Date(e + 'T23:59:59')];
+    }
+
+    /* ====================== AGGREGATION ====================== */
+    function bucketKey(date, g) {
+        if (g === 'month') return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}`;
+        if (g === 'week') {
+            const d = new Date(date); const day = (d.getDay()+6)%7; d.setDate(d.getDate()-day);
+            return d.toISOString().split('T')[0];
+        }
+        return date.toISOString().split('T')[0];
+    }
+    function keyToDate(key, g) {
+        if (g === 'month') return new Date(key + '-01T00:00:00');
+        return new Date(key + 'T00:00:00');
+    }
+    function aggregate(rows, g, mode) {
+        const buckets = {};
+        rows.forEach(d => {
+            const k = bucketKey(d.date, g);
+            if (!buckets[k]) buckets[k] = { sum: 0, n: 0 };
+            buckets[k].sum += d.value; buckets[k].n++;
+        });
+        return Object.entries(buckets).map(([k, v]) => ({
+            date: keyToDate(k, g),
+            value: mode === 'avg' ? v.sum / v.n : v.sum
+        })).sort((a,b) => a.date - b.date);
+    }
+    function effectiveAgg(m) {
+        const sel = document.getElementById('aggMode').value;
+        return sel === 'auto' ? m.agg : sel;
+    }
+    function filterRows(m) {
+        const [s, e] = getRange();
+        let rows = m.data.filter(d => d.date >= s && d.date <= e);
+        if (m.type === 'workout') {
+            const wf = document.getElementById('workoutFilter').value;
+            if (wf) rows = rows.filter(d => d.workoutType === wf);
+        }
+        return rows;
+    }
+    function movingAvg(data, w) {
+        if (data.length < w) return [];
+        const out = [];
+        for (let i = w-1; i < data.length; i++) {
+            const slice = data.slice(i-w+1, i+1);
+            out.push({ date: data[i].date, value: slice.reduce((a,b)=>a+b.value,0)/w });
+        }
+        return out;
+    }
+
+    /* ====================== RENDER ====================== */
+    function render() {
+        if (!activeIds.length || !Object.keys(metrics).length) return;
+        setBusySegments();
+
+        const series = activeIds.map(id => {
+            const m = metrics[id];
+            const rows = filterRows(m);
+            const agg = aggregate(rows, granularity, effectiveAgg(m));
+            return { m, rows, agg };
+        }).filter(s => s.agg.length);
+
+        if (!series.length) { toast('Nessun dato nel periodo selezionato'); return; }
+
+        renderStats(series[0]);
+        renderTrend(series);
+        renderDistribution(series);
+        renderTop10(series[0]);
+        renderInsight(series[0]);
+        document.getElementById('chart3').style.display = 'none';
+    }
+
+    function renderStats(s) {
+        const { m, rows } = s;
+        if (!rows.length) return;
+        const vals = rows.map(d => d.value);
+        const avg = vals.reduce((a,b)=>a+b,0)/vals.length;
+        const total = vals.reduce((a,b)=>a+b,0);
+        const max = Math.max(...vals), min = Math.min(...vals);
+        const cards = [
+            ['a', 'Media', fmtValue(m, avg)],
+            ['b', 'Massimo', fmtValue(m, max)],
+            ['c', effectiveAgg(m) === 'avg' ? 'Minimo' : 'Totale', effectiveAgg(m) === 'avg' ? fmtValue(m, min) : fmtValue(m, total)],
+            ['d', 'Rilevazioni', fmtNum(rows.length)],
+        ];
+        document.getElementById('statsContainer').innerHTML = cards.map(([cls,lab,val]) =>
+            `<div class="stat-card ${cls}"><div class="stat-number">${val}</div><div class="stat-label">${lab}</div></div>`
+        ).join('');
+    }
+
+    function layout(title, yTitle, extra = {}) {
+        const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+        return Object.assign({
+            title: { text: title, font: { size: 16 } },
+            paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+            font: { color: dark ? '#f5f5f7' : '#1d1d1f', family: '-apple-system, sans-serif' },
+            xaxis: { title: 'Data', gridcolor: dark ? '#38383a' : '#eee' },
+            yaxis: { title: yTitle, gridcolor: dark ? '#38383a' : '#eee' },
+            legend: { orientation: 'h', y: -0.2 },
+            margin: { t: 48, r: 30, b: 60, l: 60 }
+        }, extra);
+    }
+    const plotConfig = { responsive: true, displaylogo: false, modeBarButtonsToRemove: ['lasso2d','select2d'] };
+
+    function renderTrend(series) {
+        const traces = series.map((s, i) => ({
+            x: s.agg.map(d => d.date),
+            y: s.agg.map(d => convertDisplay(s.m.type, d.value)),
+            type: 'scatter', mode: 'lines+markers', name: s.m.label,
+            line: { color: s.m.color, width: 2.5 }, marker: { size: 5 },
+            yaxis: i === 0 ? 'y' : (series.length > 1 ? 'y2' : 'y')
+        }));
+        const extra = {};
+        if (series.length > 1) {
+            extra.yaxis = { title: series[0].m.label, gridcolor: '#eee' };
+            extra.yaxis2 = { title: series[1].m.label, overlaying: 'y', side: 'right', showgrid: false };
+        }
+        const gl = (granularity === 'month' ? 'mensile' : granularity === 'week' ? 'settimanale' : 'giornaliero');
+        Plotly.react('chart1', traces, layout(`📈 Trend ${gl}`, series[0].m.label, extra), plotConfig);
+    }
+
+    function renderDistribution(series) {
+        const s = series[0];
+        const ma = movingAvg(s.agg, 7);
+        const traces = [{
+            x: s.agg.map(d => d.date),
+            y: s.agg.map(d => convertDisplay(s.m.type, d.value)),
+            type: 'bar', name: s.m.label, marker: { color: s.m.color, opacity: 0.55 }
+        }];
+        if (ma.length) traces.push({
+            x: ma.map(d => d.date), y: ma.map(d => convertDisplay(s.m.type, d.value)),
+            type: 'scatter', mode: 'lines', name: 'Media mobile (7)',
+            line: { color: '#ff9500', width: 3 }
+        });
+        Plotly.react('chart2', traces, layout(`📊 Distribuzione · ${s.m.label}`, s.m.label), plotConfig);
+    }
+
+    function renderTop10(s) {
+        const panel = document.getElementById('top10Panel');
+        const sorted = [...s.rows].sort((a,b) => b.value - a.value).slice(0, 10);
+        if (!sorted.length) { panel.style.display = 'none'; return; }
+        document.getElementById('top10List').innerHTML = sorted.map((d,i) => `
+            <div class="top10-item">
+                <div class="top10-rank ${i<3?'r'+(i+1):''}">${i+1}</div>
+                <div>
+                    <div class="top10-date">${d.date.toLocaleDateString('it-IT')}</div>
+                    <div class="top10-value">${fmtValue(s.m, d.value)}</div>
+                </div>
+            </div>`).join('');
+        panel.style.display = 'block';
+    }
+
+    function renderInsight(s) {
+        const panel = document.getElementById('insightPanel');
+        const agg = s.agg;
+        if (agg.length < 4) { panel.style.display = 'none'; return; }
+        const half = Math.floor(agg.length / 2);
+        const avg = arr => arr.reduce((a,b)=>a+b.value,0) / (arr.length || 1);
+        const first = avg(agg.slice(0, half));
+        const last = avg(agg.slice(half));
+        const delta = first === 0 ? 0 : ((last - first) / first) * 100;
+        const cls = Math.abs(delta) < 2 ? 'neu' : (delta > 0 ? 'pos' : 'neg');
+        const arrow = Math.abs(delta) < 2 ? '→' : (delta > 0 ? '↑' : '↓');
+        document.getElementById('insightBody').innerHTML = `
+            <p><strong>${s.m.label}</strong> nel periodo selezionato.</p>
+            <p>Andamento prima metà → seconda metà:
+               <span class="badge ${cls}">${arrow} ${fmtNum(Math.abs(delta),1)}%</span></p>
+            <p>Media complessiva: <strong>${fmtValue(s.m, avg(agg))}</strong></p>
+            <p style="color:var(--text-muted);font-size:12px;">${agg.length} intervalli · granularità ${granularity === 'month' ? 'mensile' : granularity === 'week' ? 'settimanale' : 'giornaliera'}</p>`;
+        panel.style.display = 'block';
+    }
+
+    /* ====================== CORRELATION ====================== */
+    function alignDatasets(a, b, s, e) {
+        const map = rows => {
+            const o = {};
+            rows.forEach(d => { if (d.date >= s && d.date <= e) { const k = d.date.toISOString().split('T')[0]; o[k] = (o[k]||0) + d.value; } });
+            return o;
+        };
+        const m1 = map(a), m2 = map(b), out = [];
+        Object.keys(m1).forEach(k => { if (m2[k] !== undefined) out.push({ x: m1[k], y: m2[k] }); });
+        return out;
+    }
+    function pearson(x, y) {
+        const n = x.length;
+        const sx = x.reduce((a,b)=>a+b,0), sy = y.reduce((a,b)=>a+b,0);
+        const sxy = x.reduce((s,xi,i)=>s+xi*y[i],0);
+        const sx2 = x.reduce((s,xi)=>s+xi*xi,0), sy2 = y.reduce((s,yi)=>s+yi*yi,0);
+        const num = n*sxy - sx*sy;
+        const den = Math.sqrt((n*sx2 - sx*sx) * (n*sy2 - sy*sy));
+        return den === 0 ? 0 : num/den;
+    }
+    function interpret(r) {
+        const a = Math.abs(r);
+        if (a > 0.7) return '🟢 Forte';
+        if (a > 0.4) return '🟡 Moderata';
+        if (a > 0.2) return '🟠 Debole';
+        return '⚪ Non significativa';
+    }
+    function showCorrelation() {
+        const idA = document.getElementById('corrA').value;
+        const idB = document.getElementById('corrB').value;
+        if (!idA || !idB || idA === idB) { toast('Seleziona due metriche diverse'); return; }
+        const [s, e] = getRange();
+        const pts = alignDatasets(metrics[idA].data, metrics[idB].data, s, e);
+        if (pts.length < 3) { toast('Dati sovrapposti insufficienti'); return; }
+        const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+        const r = pearson(xs, ys);
+        // regression line
+        const n = xs.length, mx = xs.reduce((a,b)=>a+b,0)/n, my = ys.reduce((a,b)=>a+b,0)/n;
+        const slope = xs.reduce((s2,xi,i)=>s2+(xi-mx)*(ys[i]-my),0) / (xs.reduce((s2,xi)=>s2+(xi-mx)**2,0) || 1);
+        const intercept = my - slope*mx;
+        const xr = [Math.min(...xs), Math.max(...xs)];
+        const traces = [
+            { x: xs, y: ys, mode: 'markers', type: 'scatter', name: 'Osservazioni', marker: { size: 8, color: metrics[idA].color } },
+            { x: xr, y: xr.map(v => slope*v+intercept), mode: 'lines', type: 'scatter', name: 'Regressione', line: { color: '#ff3b30', width: 2, dash: 'dash' } }
+        ];
+        document.getElementById('chart3').style.display = 'block';
+        Plotly.react('chart3', traces, layout(
+            `🔗 ${metrics[idA].label} vs ${metrics[idB].label} — r = ${r.toFixed(3)} (${interpret(r)})`,
+            metrics[idB].label,
+            { xaxis: { title: metrics[idA].label, gridcolor: '#eee' } }
+        ), plotConfig);
+        document.getElementById('chart3').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    /* ====================== EXPORT ====================== */
+    function exportPNG(id, name) {
+        Plotly.downloadImage(id, { format: 'png', width: 1920, height: 1080,
+            filename: `apple_health_${name}_${new Date().toISOString().split('T')[0]}` });
+    }
+    function exportActiveCSV() {
+        activeIds.forEach(id => {
+            const m = metrics[id];
+            let csv = 'date,value\n';
+            filterRows(m).forEach(d => csv += `${d.date.toISOString().split('T')[0]},${d.value}\n`);
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `${m.id.replace(/[:/]/g,'_')}_export.csv`;
+            a.click();
+        });
+        toast('CSV esportati');
+    }
+
+    /* ====================== SEGMENTED CONTROLS ====================== */
+    function setBusySegments() {
+        document.querySelectorAll('#granularity button').forEach(b => b.classList.toggle('active', b.dataset.g === granularity));
+        document.querySelectorAll('#quickRange button').forEach(b => b.classList.toggle('active', b.dataset.range === quickRange));
+    }
+    document.getElementById('granularity').addEventListener('click', e => {
+        if (e.target.dataset.g) { granularity = e.target.dataset.g; render(); }
+    });
+    document.getElementById('quickRange').addEventListener('click', e => {
+        if (e.target.dataset.range) { quickRange = e.target.dataset.range; applyQuickRange(quickRange); }
+    });
+
+    /* ====================== DRAG & DROP ====================== */
+    const dz = document.getElementById('dropzone');
+    ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('drag'); }));
+    ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('drag'); }));
+    dz.addEventListener('drop', e => ingestFiles(e.dataTransfer.files));
+
+    /* ====================== THEME ====================== */
+    function toggleTheme() {
+        const root = document.documentElement;
+        const dark = root.getAttribute('data-theme') === 'dark';
+        root.setAttribute('data-theme', dark ? 'light' : 'dark');
+        document.getElementById('themeBtn').textContent = dark ? '🌙' : '☀️';
+        if (activeIds.length) render();
+    }
+
+    /* ====================== MISC ====================== */
+    function toggleHelp() {
+        const s = document.getElementById('helpSection');
+        const vis = s.style.display === 'block';
+        s.style.display = vis ? 'none' : 'block';
+        document.getElementById('helpBtn').textContent = vis ? '❓ Aiuto' : '✕ Chiudi';
+    }
+    let toastTimer;
+    function toast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg; t.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+    }
+    window.addEventListener('resize', () => ['chart1','chart2','chart3'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.offsetWidth) Plotly.Plots.resize(el);
+    }));
     </script>
 </body>
 </html>
