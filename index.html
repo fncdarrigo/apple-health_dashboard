@@ -135,6 +135,7 @@
         .top10-rank.r2 { background: #eef0f2; color: #86868b; }
         .top10-rank.r3 { background: #fce8e8; color: #c44c4c; }
         .top10-date { font-size: 13px; font-weight: 500; }
+        .top10-weekday { color: var(--accent); font-weight: 600; text-transform: capitalize; }
         .top10-value { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
 
         .insight { font-size: 13px; line-height: 1.6; color: var(--text-soft); }
@@ -1031,7 +1032,7 @@ python3 -m http.server 8000 --bind 127.0.0.1</code></pre>
             <div class="top10-item">
                 <div class="top10-rank ${i<3?'r'+(i+1):''}">${i+1}</div>
                 <div>
-                    <div class="top10-date">${d.date.toLocaleDateString('it-IT')}</div>
+                    <div class="top10-date"><span class="top10-weekday">${d.date.toLocaleDateString('it-IT', { weekday: 'long' })}</span> · ${d.date.toLocaleDateString('it-IT')}</div>
                     <div class="top10-value">${fmtValue(s.m, d.value)}</div>
                 </div>
             </div>`).join('');
