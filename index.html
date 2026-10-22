@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Apple Health Dashboard</title>
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
     <style>
         :root {
             --bg: #f5f5f7;
@@ -199,7 +199,8 @@
         .routes-panel { display: none; }
         .route-map { height: 560px; width: 100%; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); z-index: 0; }
         [data-theme="dark"] .route-map { filter: brightness(0.9); }
-        .leaflet-container { background: var(--surface-2); border-radius: var(--radius); font-family: inherit; }
+        .maplibregl-map { background: var(--surface-2); border-radius: var(--radius); font-family: inherit; }
+        .maplibregl-ctrl-attrib { font-family: inherit; }
 
         @media (max-width: 1024px) {
             .dashboard-layout { grid-template-columns: 1fr; }
@@ -312,9 +313,10 @@
                 <div class="help-num">5</div>
                 <div>
                     <h4>🗺️ Far funzionare le mappe (server locale)</h4>
-                    <p>Le mappe dei workout usano le tile di OpenStreetMap: aprendo il file con doppio clic (<code>file://</code>) il browser blocca le richieste e la mappa resta vuota. Avvia quindi un piccolo server locale.</p>
+                    <p>Le mappe dei workout usano tile vettoriali gratuiti di OpenFreeMap/OpenStreetMap, con etichette in italiano (o in inglese come fallback). Servono connessione internet e un browser con WebGL.</p>
+                    <p>Di solito basta aprire il file con doppio clic. Se la mappa resta vuota (alcuni browser bloccano le richieste da <code>file://</code>), avvia un piccolo server locale:</p>
                     <p><strong>Nel Terminale:</strong></p>
-                    <pre><code>cd /Users/darrigof/work/personale/apple-health_dashboard
+                    <pre><code>cd /Users/francesco/Documents/appleSalute/applehealth/health_out/apple-health_dashboard
 python3 -m http.server 8000 --bind 127.0.0.1</code></pre>
                     <p>Lascia aperto il Terminale e apri nel browser:</p>
                     <pre><code>http://localhost:8000</code></pre>
@@ -485,7 +487,7 @@ python3 -m http.server 8000 --bind 127.0.0.1</code></pre>
     let ecgs = {};             // id -> { id, label, date, classification, sampleRate, unit, device, samples:[] }
     let routes = {};           // id -> { id, label, date, points:[{lat,lon,ele,time}], distance, ascent, durationSec }
     let currentTab = 'dashboard';
-    let leafletMap = null, routeLayer = null;
+    let routeMap = null, mapReady = false, pendingRoute = null;
 
     /* ====================== CSV PARSING ====================== */
     // Robust CSV line splitter that respects double quotes
@@ -1172,7 +1174,7 @@ python3 -m http.server 8000 --bind 127.0.0.1</code></pre>
 
         if (tab === 'dashboard' && activeIds.length) setTimeout(render, 30);
         if (tab === 'ecg') setTimeout(renderECG, 30);
-        if (tab === 'routes') setTimeout(() => { renderRoute(); if (leafletMap) leafletMap.invalidateSize(); }, 60);
+        if (tab === 'routes') setTimeout(() => { renderRoute(); if (routeMap) routeMap.resize(); }, 60);
     }
 
     function updateTabBadges() {
@@ -1293,6 +1295,107 @@ python3 -m http.server 8000 --bind 127.0.0.1</code></pre>
         }).join('');
     }
 
+    /* ====================== MAPPA PERCORSI ====================== */
+    // Stile vettoriale gratuito (nessuna API key). Le etichette vengono
+    // riscritte in italiano, con fallback su inglese / nome latinizzato.
+    const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
+    const MAP_LABEL_FIELD = ['case',
+        ['has', 'name:it'], ['get', 'name:it'],
+        ['has', 'name:en'], ['get', 'name:en'],
+        ['has', 'name:latin'], ['get', 'name:latin'],
+        ['get', 'name']
+    ];
+
+    function localizeMapLabels(map) {
+        const style = map.getStyle();
+        if (!style || !style.layers) return;
+        style.layers.forEach(layer => {
+            if (layer.type !== 'symbol') return;
+            const tf = layer.layout && layer.layout['text-field'];
+            // salta le etichette che non sono nomi (es. codici strada)
+            if (!tf || !JSON.stringify(tf).includes('name')) return;
+            try { map.setLayoutProperty(layer.id, 'text-field', MAP_LABEL_FIELD); } catch (e) { /* ignore */ }
+        });
+    }
+
+    function initRouteMap() {
+        routeMap = new maplibregl.Map({
+            container: 'routeMap',
+            style: MAP_STYLE_URL,
+            center: [0, 0],
+            zoom: 1,
+            attributionControl: {
+                compact: true,
+                customAttribution: '© <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
+            }
+        });
+        routeMap.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left');
+        routeMap.on('load', () => {
+            mapReady = true;
+            localizeMapLabels(routeMap);
+            routeMap.on('click', 'route-points', e => {
+                const f = e.features && e.features[0];
+                if (!f) return;
+                new maplibregl.Popup({ closeButton: false })
+                    .setLngLat(f.geometry.coordinates)
+                    .setText(f.properties.label)
+                    .addTo(routeMap);
+            });
+            routeMap.on('mouseenter', 'route-points', () => { routeMap.getCanvas().style.cursor = 'pointer'; });
+            routeMap.on('mouseleave', 'route-points', () => { routeMap.getCanvas().style.cursor = ''; });
+            if (pendingRoute) {
+                const p = pendingRoute;
+                pendingRoute = null;
+                drawRoute(p.coords, p.route);
+            }
+        });
+    }
+
+    function drawRoute(coords, r) {
+        if (!coords.length) return;
+        if (!mapReady) { pendingRoute = { coords, route: r }; return; }
+
+        ['route-line', 'route-points'].forEach(id => {
+            if (routeMap.getLayer(id)) routeMap.removeLayer(id);
+        });
+        ['route-line-src', 'route-points-src'].forEach(id => {
+            if (routeMap.getSource(id)) routeMap.removeSource(id);
+        });
+
+        routeMap.addSource('route-line-src', {
+            type: 'geojson',
+            data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: coords } }
+        });
+        routeMap.addLayer({
+            id: 'route-line', type: 'line', source: 'route-line-src',
+            layout: { 'line-cap': 'round', 'line-join': 'round' },
+            paint: { 'line-color': '#0071e3', 'line-width': 4, 'line-opacity': 0.85 }
+        });
+
+        routeMap.addSource('route-points-src', {
+            type: 'geojson',
+            data: {
+                type: 'FeatureCollection',
+                features: [
+                    { type: 'Feature', properties: { label: 'Partenza' }, geometry: { type: 'Point', coordinates: coords[0] } },
+                    { type: 'Feature', properties: { label: 'Arrivo' }, geometry: { type: 'Point', coordinates: coords[coords.length - 1] } }
+                ]
+            }
+        });
+        routeMap.addLayer({
+            id: 'route-points', type: 'circle', source: 'route-points-src',
+            paint: {
+                'circle-radius': 7,
+                'circle-color': ['match', ['get', 'label'], 'Partenza', '#34c759', '#ff3b30'],
+                'circle-stroke-width': 2,
+                'circle-stroke-color': '#ffffff'
+            }
+        });
+
+        const bounds = coords.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0]));
+        routeMap.fitBounds(bounds, { padding: 40, duration: 0, maxZoom: 16 });
+    }
+
     function renderRoute() {
         const ids = Object.keys(routes);
         const hasData = ids.length > 0;
@@ -1307,20 +1410,9 @@ python3 -m http.server 8000 --bind 127.0.0.1</code></pre>
 
         const latlngs = r.points.map(p => [p.lat, p.lon]);
 
-        if (!leafletMap) {
-            leafletMap = L.map('routeMap');
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19, attribution: '© OpenStreetMap'
-            }).addTo(leafletMap);
-        }
-        if (routeLayer) { leafletMap.removeLayer(routeLayer); routeLayer = null; }
-
-        const line = L.polyline(latlngs, { color: '#0071e3', weight: 4, opacity: 0.85 });
-        const start = L.circleMarker(latlngs[0], { radius: 7, color: '#fff', weight: 2, fillColor: '#34c759', fillOpacity: 1 }).bindPopup('Partenza');
-        const end = L.circleMarker(latlngs[latlngs.length-1], { radius: 7, color: '#fff', weight: 2, fillColor: '#ff3b30', fillOpacity: 1 }).bindPopup('Arrivo');
-        routeLayer = L.layerGroup([line, start, end]).addTo(leafletMap);
-        leafletMap.fitBounds(line.getBounds(), { padding: [25, 25] });
-        setTimeout(() => leafletMap.invalidateSize(), 50);
+        if (!routeMap) initRouteMap();
+        drawRoute(latlngs.map(([lat, lon]) => [lon, lat]), r);
+        setTimeout(() => routeMap && routeMap.resize(), 50);
 
         // Info
         const pace = r.distance > 0 && r.durationSec > 0 ? (r.durationSec / 60) / (r.distance / 1000) : 0;
